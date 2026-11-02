@@ -1,0 +1,61 @@
+expression pServer = "YOUR-SQL-SERVER" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 9dbb34e6-fa97-416a-b6b1-4a85fd783ae8
+	queryGroup: Parameters
+
+	annotation PBI_ResultType = Text
+
+expression pDatabase = "YOUR-DATABASE" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 3a28c21d-5a46-4189-9332-f5080e48a200
+	queryGroup: Parameters
+
+	annotation PBI_ResultType = Text
+
+/// The trade terms, written once: the body of a SQL common table expression that FactTradeTerm and
+/// FactTradeTermMonth both read as WITH term AS (" & TradeTerms & "). One row per term, with the months
+/// it has run. See docs/trade-investment.md.
+expression TradeTerms = ```
+		let
+		    // Query group: Staging. Text, not a table: the SQL that picks a term lives in one place.
+		    Query = "
+		        -- every term that starts in the current or prior year, with the months it has run up to today:
+		        -- 0 before it starts, every month of the term once it has ended, the months to the current one
+		        -- included while it runs
+		        SELECT
+		            t.TermId,
+		            t.OutletId,
+		            o.PartnerId,
+		            t.BrandId,
+		            g.TermTypeName AS TermType,
+		            -- the term group comes from the source: Bonus, Position, Campaign or Promotion
+		            g.TermGroup,
+		            t.IsPercentage,
+		            CAST(t.ValueExVat AS FLOAT) AS ValueExVat,
+		            CAST(t.Units AS FLOAT) AS Units,
+		            CAST(t.StartDate AS DATE) AS StartDate,
+		            CAST(t.EndDate AS DATE) AS EndDate,
+		            CASE
+		                WHEN t.StartDate > GETDATE() THEN 0
+		                WHEN t.EndDate <= GETDATE() THEN DATEDIFF(MONTH, t.StartDate, t.EndDate) + 1
+		                ELSE DATEDIFF(MONTH, t.StartDate, GETDATE()) + 1
+		            END AS MonthsToDate,
+		            DATEDIFF(MONTH, t.StartDate, t.EndDate) + 1 AS MonthsTotal,
+		            -- a term over one whole calendar year
+		            CASE WHEN MONTH(t.StartDate) = 1 AND DAY(t.StartDate) = 1
+		                      AND MONTH(t.EndDate) = 12 AND DAY(t.EndDate) = 31
+		                      AND YEAR(t.StartDate) = YEAR(t.EndDate)
+		                 THEN 1 ELSE 0 END AS IsFullYear
+		        FROM ti.TradeTerm t
+		        INNER JOIN ti.TermType g
+		            ON g.TermTypeId = t.TermTypeId
+		        INNER JOIN ti.Outlet o
+		            ON o.OutletId = t.OutletId
+		        WHERE t.StartDate >= DATEFROMPARTS(YEAR(GETDATE()) - 1, 1, 1)
+		    "
+		in
+		    Query
+		```
+	lineageTag: 4953afba-f550-4b5e-bcd7-2156a151b936
+	queryGroup: Staging
+
+	annotation PBI_ResultType = Text
+

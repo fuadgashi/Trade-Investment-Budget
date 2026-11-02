@@ -1,0 +1,311 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainerMobileState/2.8.0/schema.json",
+  "position": {
+    "x": 0,
+    "y": 2320,
+    "z": 16000,
+    "height": 450,
+    "width": 324,
+    "tabOrder": 24000
+  },
+  "objects": {
+    "values": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "8D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnHeaders": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "8D"
+              }
+            }
+          },
+          "columnAdjustment": {
+            "expr": {
+              "Literal": {
+                "Value": "'fixedWidth'"
+              }
+            }
+          },
+          "defaultColumnWidth": {
+            "expr": {
+              "Literal": {
+                "Value": "105D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnWidth": [
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Bonus Accumulated"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Position Accumulated"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Marketing Accumulated Actual Year"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Credit Notes Received Actual Year"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Total Accumulated"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Bonus Spent"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Credit Notes Issued Actual Year"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Total Discounts"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Trade Terms Spent Actual Year"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Total Spent"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "120D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "Measure.Total Difference"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "190D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "id": "cornerColumn"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "105D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "id": "valuesColumn"
+        }
+      }
+    ],
+    "grid": [],
+    "total": [],
+    "rowHeaders": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "8D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualContainerObjects": {
+    "title": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "9D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "subTitle": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "9D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "visualHeader": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "spacing": [],
+    "stylePreset": [],
+    "general": [],
+    "background": [],
+    "border": [],
+    "padding": [
+      {
+        "properties": {
+          "right": {
+            "expr": {
+              "Literal": {
+                "Value": "5D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

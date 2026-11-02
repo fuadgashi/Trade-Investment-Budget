@@ -1,0 +1,309 @@
+/// Year-to-date up to today: evaluates the measure for the date slicers' window within the current calendar year, cut at today (1 January to today when no slicer is set). KEEPFILTERS keeps the slicers' selection instead of replacing it.
+function YearToDay =
+		(cal_funct: anyref expr) =>
+				CALCULATE(
+					cal_funct,
+					KEEPFILTERS(DimDate[Year] = YEAR(TODAY())),
+					KEEPFILTERS(DimDate[Date] <= TODAY())
+				)
+	lineageTag: e9a37f3a-ee9f-4d52-b132-f9fbe804742e
+
+/// Prior year: shifts the measure back one year using DATEADD and restricts to the prior calendar year. Used for year-over-year comparisons.
+function PrevYear =
+		(cal_funct: anyref expr) =>
+				CALCULATE(
+					cal_funct,
+					DATEADD(
+						DimDate[Date],
+						-1,
+						YEAR
+					),
+					DimDate[Year] = YEAR(TODAY()) - 1
+				)
+	lineageTag: 99d16386-e11b-4286-abde-e777286d49ba
+
+/// Theme sentiment color name ("good"/"bad"/"neutral") for CurrentValue's position relative to Center. Center is the neutral point: 0 for a difference, 1 for a ratio - passing the wrong center silently marks every decline as "good" on a ratio. Feeds Field-value conditional formatting so RAG colors follow theme switches instead of frozen hex. Blank-safe.
+function RagColor =
+		(CurrentValue: decimal val, Center: decimal val) =>
+				SWITCH(
+					TRUE(),
+					ISBLANK(CurrentValue), BLANK(),
+					CurrentValue > Center, "good",
+					CurrentValue < Center, "bad",
+					"neutral"
+				)
+	lineageTag: b467503d-b8e5-48fa-bb60-3e6ab1ebedcd
+
+/// Dynamic format string for an amount in compact form: whole units below 1,000, then K, M and B with three significant digits. Signed adds a plus sign to positive values. Returns a literal format string, so the measure stays numeric.
+function NumberFormat =
+		(Amount: decimal val, Signed: boolean val) =>
+				VAR _abs = ABS(Amount)
+				-- outer SWITCH picks the unit, inner one the band; band edges sit where three-digit
+				-- rounding carries over (9,995 -> 10.0K); the last line of each unit is the step-up (999.6 -> 1.0K)
+				VAR _text =
+					SWITCH(
+						TRUE(),
+						_abs < 999.5, FORMAT(ROUND(_abs, 0), "#,0"),                     -- 0 - 999
+						_abs < 999.5E3,
+							SWITCH(
+								TRUE(),
+								_abs >= 99950, FORMAT(ROUND(_abs, -3) / 1E3, "#,0"),     -- 100K - 999K
+								_abs >= 9995,  FORMAT(ROUND(_abs, -2) / 1E3, "0.0"),     -- 10.0K - 99.9K
+								_abs >= 1E3,   FORMAT(ROUND(_abs, -1) / 1E3, "0.00"),    -- 1.00K - 9.99K
+								FORMAT(1, "0.0")                                          -- 1.0K (FORMAT keeps the culture's decimal mark)
+							) & "K",
+						_abs < 999.5E6,
+							SWITCH(
+								TRUE(),
+								_abs >= 99.95E6, FORMAT(ROUND(_abs, -6) / 1E6, "#,0"),
+								_abs >= 9.995E6, FORMAT(ROUND(_abs, -5) / 1E6, "0.0"),
+								_abs >= 1E6,     FORMAT(ROUND(_abs, -4) / 1E6, "0.00"),
+								FORMAT(1, "0.0")
+							) & "M",
+						SWITCH(
+							TRUE(),
+							_abs >= 99.95E9, FORMAT(ROUND(_abs, -9) / 1E9, "#,0"),           -- 100B and up: whole billions
+							_abs >= 9.995E9, FORMAT(ROUND(_abs, -8) / 1E9, "0.0"),
+							_abs >= 1E9,     FORMAT(ROUND(_abs, -7) / 1E9, "0.00"),
+							FORMAT(1, "0.0")
+						) & "B"
+					)
+				-- opening quote plus sign; anything between -0.5 and 0.5 rounds to 0 and gets no sign
+				VAR _literal = IF(Amount <= -0.5, """-", IF(Signed && Amount >= 0.5, """+", """")) & _text & """"
+				RETURN
+					SUBSTITUTE("#;#;#", "#", _literal)                                    -- same literal for positive;negative;zero
+	lineageTag: 1f7bd3ba-07cd-4c4a-b776-8aaaa12e1a4e
+
+/// One UI text from Labels, in the viewer's culture (User Culture): the row for this label type, owner type and owner number. Every label measure is a call to it. A missing row shows a warning glyph, never a quiet fallback.
+function LabelText =
+		(LabelType: string val, OwnerType: string val, OwnerNumber: int64 val) =>
+				VAR _culture = [User Culture]
+				RETURN
+					CALCULATE(
+						SELECTEDVALUE( Labels[Label], "⚠" ),
+						Labels[LabelType] = LabelType,
+						Labels[OwnerType] = OwnerType,
+						Labels[OwnerNumber] = OwnerNumber,
+						Labels[Culture] = _culture
+					)
+	lineageTag: b0ed3bde-f758-4dc0-9098-e2a952059577
+
+/// The customers with a trade term of TermGroup (Bonus, Position...) running at some point between 1 January and
+/// today, by the term's own dates, whenever it started. A one-column table of FactTradeTerm[PartnerId]; the bonus
+/// and position measures restrict sales to these customers with TREATAS onto DimPartner[PartnerId].
+function TermCustomers =
+		(TermGroup: string val) =>
+				CALCULATETABLE(
+					VALUES( FactTradeTerm[PartnerId] ),
+					FactTradeTerm[TermGroup] = TermGroup,
+					-- the term's own dates decide, not its start month on the calendar
+					REMOVEFILTERS( DimDate ),
+					FactTradeTerm[StartDate] <= TODAY(),
+					FactTradeTerm[EndDate] >= DATE( YEAR( TODAY() ), 1, 1 )
+				)
+	lineageTag: e28ab88c-701d-4f0f-a6aa-3899bb71a0e2
+
+/// HTML for a card that splits a value into parts: the value (ValueText) with a caption, a bar of the parts, a legend
+/// and a note. Parts has five columns: the label, the value already formatted, the share of the bar (0 to 1), the colour
+/// and the order. A part with no share fills the rest of the bar; a part with no label stays out of the legend; the
+/// colour is one of dark, blue, orange, amber, green, grey (theme colours; anything else reads grey). ValueState good or
+/// bad colours the value in the theme's sentiment colour, blank keeps it in the text colour. NoteText may mark its value
+/// with <b>; a blank note draws no note. The parts share the visual's height with equal space around each; the text is
+/// 13 px, the visual title's size, and shrinks to 11 px only when the visual is too small. No padding and no header:
+/// the visual's padding and title frame the card.
+function HtmlBreakdownCard =
+		(ValueText: string val, ValueState: string val, CaptionText: string val, Parts: table val, NoteText: string val) =>
+				-- calculations: the value's state and text, and each part's colour, bar width and legend value
+				VAR _state = IF( ValueState IN { "good", "bad" }, ValueState, "" )
+				VAR _value = IF( LEN( ValueText ) = 0, "–", ValueText )
+				VAR _parts =
+					ADDCOLUMNS(
+						Parts,
+						-- a colour outside the list reads grey
+						"@colour", IF( [Value4] IN { "dark", "blue", "orange", "amber", "green", "grey" }, [Value4], "grey" ),
+						-- a part with no share fills the rest; a share is capped to 0-100% and written in en-US so the decimal
+						-- separator is a point, which CSS needs
+						"@width", IF( ISBLANK( [Value3] ), "flex:1", "width:" & FORMAT( MIN( MAX( [Value3], 0 ), 1 ) * 100, "0.0", "en-US" ) & "%" ),
+						-- a blank value reads –
+						"@value", IF( LEN( [Value2] ) = 0, "–", [Value2] )
+					)
+				VAR _style =
+					"<style>"
+						-- .k the card: fills the visual with no padding of its own and spreads its parts with equal space
+						-- above, between and below (space-evenly). One font size sets every other size (em): 13 px, less only
+						-- when the height (about 9.5 lines) or 4.3% of the width does not allow it, never under 11 px
+						& ".k{position:absolute;inset:0;box-sizing:border-box;padding:0;display:flex;flex-direction:column;justify-content:space-evenly;font:clamp(11px,min(calc(100vh/9.5),4.3vw),13px)/1.25 Segoe UI,sans-serif;color:#0A2F45;overflow:hidden}"
+						-- .h the headline: the value and its caption on one baseline, the caption wrapping below when narrow
+						& ".h{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:0.6em}"
+						-- .v the value: large and light, digits of equal width
+						& ".v{font-size:2.3em;font-weight:300;line-height:1.1;font-variant-numeric:tabular-nums}"
+						-- the value in the theme's good / bad colour when ValueState asks for it
+						& ".good .v{color:#1E8A5E}.bad .v{color:#C63D3D}"
+						-- .c the caption, in the theme's second-level colour
+						& ".c{color:#33566B}"
+						-- .b the bar: a light rounded track; each part is a div inside it, a thin white line between parts
+						& ".b{display:flex;height:0.75em;background:#EEF2F5;border-radius:0.2em;overflow:hidden}"
+						& ".b div{flex:none;height:100%;box-sizing:border-box}.b div+div{border-left:0.15em solid #fff}"
+						-- .l the legend: one item per labelled part, wrapping; i is the part's colour key
+						& ".l{display:flex;flex-wrap:wrap;column-gap:1.1em;row-gap:0.15em;font-size:0.92em}"
+						& ".l i{display:inline-block;width:0.7em;height:0.7em;margin-right:0.4em}"
+						-- the part colours, from the report theme; grey is the neutral rest
+						& ".dark{background:#0A2F45}.blue{background:#0EA0C6}.orange{background:#E47511}.amber{background:#A56C00}.green{background:#1E8A5E}.grey{background:#B9C4CC}"
+						-- .n the note: a pale rounded pill
+						& ".n span{display:inline-block;font-size:0.92em;background:#E6F5FA;border-radius:1em;padding:0.2em 0.75em}"
+					& "</style>"
+				-- HTML: the bar, one div per part in the order of the fifth column
+				VAR _bar =
+					CONCATENATEX( _parts, "<div class='" & [@colour] & "' style='" & [@width] & "'></div>", "", [Value5], ASC )
+				-- the legend, one item per part with a label: colour key, label, value
+				VAR _legend =
+					CONCATENATEX(
+						FILTER( _parts, LEN( [Value1] ) > 0 ),
+						"<span><i class='" & [@colour] & "'></i>" & [Value1] & " " & [@value] & "</span>",
+						"",
+						[Value5], ASC
+					)
+				RETURN
+					_style
+						& "<div class='k " & _state & "'>"
+						-- the headline, the bar, the legend when a part has a label, the note when there is one
+						& "<div class='h'><span class='v'>" & _value & "</span><span class='c'>" & CaptionText & "</span></div>"
+						& "<div class='b'>" & _bar & "</div>"
+						& IF( LEN( _legend ) > 0, "<div class='l'>" & _legend & "</div>" )
+						& IF( LEN( NoteText ) > 0, "<div class='n'><span>" & NoteText & "</span></div>" )
+						& "</div>"
+	lineageTag: ebdcc7ec-47cf-4cc4-af25-89a645fd967c
+
+/// HTML for a card that sets a value against a target: the value (ValueText) with a caption, a bar filled to FillShare
+/// with a target line at TargetShare (both 0 to 1 of the bar's width), a legend of the fill (FillText) and the target
+/// (TargetText), and a note. A blank TargetShare draws no target line and no target legend. ValueState good or bad
+/// colours the value in the theme's sentiment colour, blank keeps it in the text colour. NoteText may mark its value
+/// with <b>; a blank note draws no note. The parts share the visual's height with equal space around each; the text is
+/// 13 px, the visual title's size, and shrinks to 11 px only when the visual is too small. No padding and no header:
+/// the visual's padding and title frame the card.
+function HtmlTargetCard =
+		(ValueText: string val, ValueState: string val, CaptionText: string val, FillShare: decimal val, FillText: string val, TargetShare: decimal val, TargetText: string val, NoteText: string val) =>
+				-- calculations: the value's state and text, the fill's width and the target's position, capped to the bar
+				-- and written in en-US so the decimal separator is a point, which CSS needs
+				VAR _state = IF( ValueState IN { "good", "bad" }, ValueState, "" )
+				VAR _value = IF( LEN( ValueText ) = 0, "–", ValueText )
+				VAR _fill = FORMAT( MIN( MAX( FillShare, 0 ), 1 ) * 100, "0.0", "en-US" )
+				VAR _target = FORMAT( MIN( MAX( TargetShare, 0 ), 1 ) * 100, "0.0", "en-US" )
+				VAR _has_target = NOT ISBLANK( TargetShare )
+				VAR _style =
+					"<style>"
+						-- .k the card: fills the visual with no padding of its own and spreads its parts with equal space
+						-- above, between and below (space-evenly). One font size sets every other size (em): 13 px, less only
+						-- when the height (about 9.5 lines) or 4.3% of the width does not allow it, never under 11 px
+						& ".k{position:absolute;inset:0;box-sizing:border-box;padding:0;display:flex;flex-direction:column;justify-content:space-evenly;font:clamp(11px,min(calc(100vh/9.5),4.3vw),13px)/1.25 Segoe UI,sans-serif;color:#0A2F45;overflow:hidden}"
+						-- .h the headline: the value and its caption on one baseline, the caption wrapping below when narrow
+						& ".h{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:0.6em}"
+						-- .v the value: large and light, digits of equal width
+						& ".v{font-size:2.3em;font-weight:300;line-height:1.1;font-variant-numeric:tabular-nums}"
+						-- the value in the theme's good / bad colour when ValueState asks for it
+						& ".good .v{color:#1E8A5E}.bad .v{color:#C63D3D}"
+						-- .c the caption, in the theme's second-level colour
+						& ".c{color:#33566B}"
+						-- .b the bar: a light rounded track; .f the fill in the theme's blue; .m the target line in the text
+						-- colour, a little taller than the track
+						& ".b{position:relative;height:0.75em;background:#EEF2F5;border-radius:0.2em}"
+						& ".f{position:absolute;left:0;top:0;bottom:0;background:#0EA0C6;border-radius:0.2em 0 0 0.2em}"
+						& ".m{position:absolute;top:-0.3em;bottom:-0.3em;width:0.2em;margin-left:-0.1em;background:#0A2F45}"
+						-- .l the legend: the fill's colour key and text, then the target's line and text
+						& ".l{display:flex;flex-wrap:wrap;column-gap:1.1em;row-gap:0.15em;font-size:0.92em}"
+						& ".l i{display:inline-block;width:0.7em;height:0.7em;margin-right:0.4em;background:#0EA0C6}"
+						& ".l i.t{width:0.2em;background:#0A2F45}"
+						-- .n the note: a pale rounded pill
+						& ".n span{display:inline-block;font-size:0.92em;background:#E6F5FA;border-radius:1em;padding:0.2em 0.75em}"
+					& "</style>"
+				RETURN
+					_style
+						& "<div class='k " & _state & "'>"
+						-- the headline, the bar with its target line, the legend, the note when there is one
+						& "<div class='h'><span class='v'>" & _value & "</span><span class='c'>" & CaptionText & "</span></div>"
+						& "<div class='b'><div class='f' style='width:" & _fill & "%'></div>"
+						& IF( _has_target, "<div class='m' style='left:" & _target & "%'></div>" )
+						& "</div>"
+						& "<div class='l'><span><i></i>" & FillText & "</span>"
+						& IF( _has_target, "<span><i class='t'></i>" & TargetText & "</span>" )
+						& "</div>"
+						& IF( LEN( NoteText ) > 0, "<div class='n'><span>" & NoteText & "</span></div>" )
+						& "</div>"
+	lineageTag: 7e8f875f-a1e6-42ef-a55f-40c8182f8931
+
+/// HTML for a card of checks: one row per row of CheckRows, each an icon, a text and a value. CheckRows has five columns:
+/// the state, the text, the value (a number), the value's format and the row's order. The format is compact (NumberFormat),
+/// signed (NumberFormat with a plus sign), count (#,0), percent (0%) or percent1 (0.0%): the function writes the value
+/// from the number. The states are RagColor's good / bad / neutral plus rise and info: good a tick, bad !, neutral –,
+/// rise ▲, info i, each icon in the report theme's colour; an unknown or blank state reads neutral, and a blank value or
+/// an unknown format reads –. The values are in the text colour: the icon carries the state.
+/// The rows share the visual's height with equal space above the first, between each and below the last; every row is
+/// two lines high and a longer text ends in …. The text is 13 px, the visual title's size, and shrinks to 11 px only when
+/// the rows do not fit. No padding and no header: the visual's padding and title frame the card.
+function HtmlInfoCard =
+		(CheckRows: table val) =>
+				-- calculations: the number of rows, and each row's state, icon and value
+				VAR _row_count = COUNTROWS( CheckRows )
+				VAR _checks =
+					ADDCOLUMNS(
+						ADDCOLUMNS(
+							CheckRows,
+							-- an unknown or blank state reads neutral
+							"@state", IF( [Value1] IN { "good", "bad", "neutral", "rise", "info" }, [Value1], "neutral" )
+						),
+						-- the tick is drawn in CSS (.c), not the ✔ character, which a phone may draw as a coloured emoji
+						-- that ignores the white
+						"@icon", SWITCH( [@state], "good", "<span class='c'></span>", "bad", "!", "rise", "▲", "info", "i", "–" ),
+						-- the value written from the number by its format; a blank value or an unknown format reads –. The
+						-- percentages are written in en-US, so their decimal mark does not follow the user's culture
+						"@value",
+							IF(
+								ISBLANK( [Value3] ),
+								"–",
+								SWITCH(
+									[Value4],
+									"compact", FORMAT( [Value3], NumberFormat( [Value3], FALSE ) ),
+									"signed", FORMAT( [Value3], NumberFormat( [Value3], TRUE ) ),
+									"count", FORMAT( [Value3], "#,0" ),
+									"percent", FORMAT( [Value3], "0%", "en-US" ),
+									"percent1", FORMAT( [Value3], "0.0%", "en-US" ),
+									"–"
+								)
+							)
+					)
+				VAR _style =
+					"<style>"
+						-- .k the card: fills the visual with no padding of its own, and spreads the rows with equal space above
+						-- the first, between each and below the last (space-evenly). One font size sets every other size (em):
+						-- 13 px, or less when the rows (--n, each 2.5em plus 0.4em of space) do not fit the height, never under
+						-- 11 px; 4.3% of the width keeps it from crowding a narrow visual
+						& ".k{position:absolute;inset:0;box-sizing:border-box;padding:0;display:flex;flex-direction:column;justify-content:space-evenly;font:clamp(11px,min(calc(100vh/(var(--n)*2.9 + 0.4)),4.3vw),13px)/1.25 Segoe UI,sans-serif;color:#0A2F45;overflow:hidden}"
+						-- .r one row: always two lines high, so the icons are evenly spaced whether a text wraps or not; the
+						-- icon, the text and the value side by side
+						& ".r{flex:none;height:2.5em;display:flex;align-items:center;gap:0.75em}"
+						-- .i the icon: a rounded square with the symbol centred in white; its fill is the state's colour
+						& ".i{flex:none;width:1.7em;height:1.7em;border-radius:0.38em;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold}"
+						-- .c the tick: the right and bottom white borders of a narrow box, turned 45 degrees
+						& ".c{width:0.32em;height:0.66em;border:solid #fff;border-width:0 0.16em 0.16em 0;transform:translateY(-0.08em) rotate(45deg)}"
+						-- .x the text: takes the space between the icon and the value, at most two lines, then …
+						& ".x{flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}"
+						-- .v the value: bold, a little larger, never wrapped; digits of equal width so values line up
+						& ".v{flex:none;white-space:nowrap;font-size:1.15em;font-weight:bold;font-variant-numeric:tabular-nums}"
+						-- the icon's fill in the theme's good / bad / neutral colour; rise shares neutral's; info the text colour
+						& ".good .i{background:#1E8A5E}"
+						& ".bad .i{background:#C63D3D}"
+						& ".neutral .i,.rise .i{background:#A56C00}"
+						& ".info .i{background:#0A2F45}"
+					& "</style>"
+				-- HTML: one div per check, in the order of the fifth column; the state is the row's CSS class
+				VAR _rows =
+					CONCATENATEX(
+						_checks,
+						"<div class='r " & [@state] & "'><span class='i'>" & [@icon] & "</span><span class='x'>" & [Value2] & "</span><b class='v'>" & [@value] & "</b></div>",
+						"",
+						[Value5], ASC
+					)
+				RETURN
+					-- --n, the number of rows, sizes the text in .k
+					_style & "<div class='k' style='--n:" & _row_count & "'>" & _rows & "</div>"
+	lineageTag: 6371ea8b-5911-438e-9ff0-52c05e24d554

@@ -1,0 +1,1454 @@
+/// The measure host: every business measure of the model, by subject folder.
+table Measure
+	lineageTag: 95c90488-61ff-4b15-b791-987d06a56d61
+
+	/// Net sales ([Sales Net Price]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Sales Net Price Actual Year' =
+			
+			YearToDay( [Sales Net Price] )
+		displayFolder: Sales\Net Price
+		lineageTag: efee25f1-c35e-4461-9839-f1266b2c4c55
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales ([Sales Net Price]), in the prior year: the date slicers' window one year back, inside last calendar year. Value.
+	measure 'Sales Net Price Prior Year' =
+			
+			PrevYear( [Sales Net Price] )
+		displayFolder: Sales\Net Price
+		lineageTag: 717d538a-c130-4c23-bf37-0f608b0b2abd
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales ([Sales Net Price]), in the prior year up to the same day: the date slicers' window cut at today, one year back (1 January to today's date one year back when no slicer is set). Value.
+	measure 'Sales Net Price Prior Year YTD' =
+			
+			YearToDay( [Sales Net Price Prior Year] )
+		displayFolder: Sales\Net Price
+		lineageTag: 96cb02d3-cad3-43f6-8923-06e8417a9187
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Extra discount this year to date as a share of sales at the regular selling price. Percentage.
+	measure 'Extra Discount Rate Actual Year' =
+			
+			DIVIDE(
+				[Extra Discount Actual Year],
+				[Sales Selling Price Actual Year],
+				0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Trade Marketing\Discounts
+		lineageTag: 5313e1d5-a880-45b1-8f34-4782ee046baf
+
+	/// Extra discount ([Extra Discount]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Extra Discount Actual Year' =
+			
+			YearToDay( [Extra Discount] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Discounts
+		lineageTag: cb158e7f-6818-4150-8233-0b5738046684
+
+	/// Gross margin ([Gross Margin]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Gross Margin Actual Year' =
+			
+			YearToDay( [Gross Margin] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Margin\Ratios
+		lineageTag: 4b9dbfaf-9561-447c-aa79-0e1b452628d0
+
+	/// Gross profit ([Gross Profit]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Gross Profit Actual Year' =
+			
+			YearToDay( [Gross Profit] )
+		formatString: #,0
+		displayFolder: Margin\Profit
+		lineageTag: 1e61da44-3b0a-46f3-8439-19820ccd6999
+
+	/// Credit notes issued ([Credit Notes Issued]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Credit Notes Issued Actual Year' =
+			
+			YearToDay( [Credit Notes Issued] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Credit Notes Issued
+		lineageTag: 85bd2cd3-0653-4c91-bb30-f9f311a74ac1
+
+	/// Credit notes received ([Credit Notes Received]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Credit Notes Received Actual Year' =
+			
+			YearToDay( [Credit Notes Received] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Credit Notes Received
+		lineageTag: b3122b63-c8ca-4d1e-ad81-b389cccbe05f
+
+	/// Quantity sold ([Sales Quantity]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Units.
+	measure 'Sales Quantity Actual Year' =
+			
+			YearToDay( [Sales Quantity] )
+		displayFolder: Sales\Quantity
+		lineageTag: a34e1826-0cc6-42a8-a9e0-eec6e4fd7bed
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Quantity sold ([Sales Quantity]), in the prior year: the date slicers' window one year back, inside last calendar year. Units.
+	measure 'Sales Quantity Prior Year' =
+			
+			PrevYear( [Sales Quantity] )
+		displayFolder: Sales\Quantity
+		lineageTag: 4a2d18b2-0c8b-483a-9f7d-52483820d80b
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Quantity sold ([Sales Quantity]), in the prior year up to the same day: the date slicers' window cut at today, one year back (1 January to today's date one year back when no slicer is set). Units.
+	measure 'Sales Quantity Prior Year YTD' =
+			
+			YearToDay( [Sales Quantity Prior Year] )
+		displayFolder: Sales\Quantity
+		lineageTag: 7a9a19cb-067e-4df6-9185-c2321e53cdf1
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales: quantity x the net price the customer pays, after discounts and with VAT, on sales-out documents. The one sales figure of the model: call it, never rebuild it. Value.
+	measure 'Sales Net Price' =
+			
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity] * FactSalesLine[NetPrice]),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		displayFolder: Calculation Roots\Sales
+		lineageTag: a5678e55-fdcd-48c7-920f-09a7c3b53797
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Cost of sales: quantity x the average cost price, without VAT, on sales-out documents. Goods only, as every sales line is. Value.
+	measure 'Sales Cost Price' =
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity] * FactSalesLine[UnitCost]),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		displayFolder: Calculation Roots\Sales
+		lineageTag: 79e92186-5cb3-4c24-b769-6d5cda0cb852
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Gross profit: net sales without VAT less the cost of sales, goods only. Value.
+	measure 'Gross Profit' =
+			
+			VAR _net_sales = [Sales Net Price ex VAT]
+			VAR _cost_of_sales = [Sales Cost Price]
+			RETURN
+			    _net_sales - _cost_of_sales
+		formatString: #,0
+		displayFolder: Calculation Roots\Profit
+		lineageTag: 94b0e203-ccac-4f63-b3ae-f2f1e417d454
+
+	/// Credit notes issued to customers, without VAT, split by brand, as a positive amount: trade spend (part of Budget Spent and Total Spent). Value.
+	measure 'Credit Notes Issued' =
+			CALCULATE(
+			    SUM( FactCreditNote[Value] ),
+			    FactCreditNote[Direction] = "Issued"
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 20187e5d-189f-46fa-b191-a6b000ca8ccb
+
+	/// Credit notes received from suppliers, without VAT, split by brand, as a positive amount added to the trade budget (Budget Accumulated). Blank on a single product: credit notes are booked on the brand, not on products. Value.
+	measure 'Credit Notes Received' =
+			-- booked per brand: on a single product there is nothing to show
+			IF(
+			    NOT ( ISFILTERED( DimProduct[ProductId] ) || ISFILTERED( DimProduct[ProductName] ) ),
+			    CALCULATE(
+			        SUM( FactCreditNote[Value] ),
+			        FactCreditNote[Direction] = "Received"
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 86e95079-0724-4a2c-a659-5feaf6708715
+
+	/// Extra discount given on sales: quantity x the gap between the price after the regular discount and the net price, with VAT, on sales-out documents. Value.
+	measure 'Extra Discount' =
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity] * ( FactSalesLine[GrossPrice] - FactSalesLine[NetPrice] ) ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 874ed57c-3d3e-4a3b-9d92-74c16dd7c584
+
+	/// Sales at the regular selling price, before discounts, with VAT, on sales-out documents. Value.
+	measure 'Sales Selling Price' =
+			
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity] * FactSalesLine[ListPrice]),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		displayFolder: Calculation Roots\Sales
+		lineageTag: 9a12873d-fab2-41d1-aad5-eb87807a1355
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Sales at the regular price ([Sales Selling Price]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Sales Selling Price Actual Year' =
+			
+			YearToDay( [Sales Selling Price] )
+		displayFolder: Sales\Selling Price
+		lineageTag: bfca4a79-693f-4ce1-91a5-3c8e4c351333
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Cost price per unit ([Cost Price]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value per unit.
+	measure 'Cost Price Actual Year' =
+			
+			YearToDay( [Cost Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: 2d282dab-cde0-40fb-8380-2d11ea33886f
+
+	/// Distribution cost rate of the price calculation, this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Distribution Cost Actual Year %' =
+			
+			YearToDay( [Distribution Cost %] )
+		formatString: 0%;-0%;0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: edd55d69-591f-4458-bfdc-690190c72eff
+
+	/// Distribution profit rate of the price calculation, this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Distribution Profit Actual Year %' =
+			
+			YearToDay( [Distribution Profit %] )
+		formatString: 0%;-0%;0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: 7234706b-b8c7-48f0-8633-4aab51d1188e
+
+	/// Price up to distribution per unit ([Mark Up]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value per unit.
+	measure 'Mark Up Actual Year' =
+			
+			YearToDay( [Mark Up] )
+		formatString: #,0.00
+		displayFolder: Prices\Price Calculation
+		lineageTag: 3ab155b1-7e8f-4218-ad4e-70d45f0cc8ed
+
+	/// Annual bonus rate ([Bonus Product Rate]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Bonus Product Rate Actual Year' =
+			
+			YearToDay( [Bonus Product Rate] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: 91045242-4f4c-4cc1-ac6f-466dc57c6be4
+
+	/// Secondary-position rate ([Position Product Rate]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Position Product Rate Actual Year' =
+			
+			YearToDay( [Position Product Rate] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: a7d42701-9434-4287-88f3-03c4ec807cbc
+
+	/// Regular price per unit ([Regular Price]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value per unit.
+	measure 'Regular Price Actual Year' =
+			
+			YearToDay( [Regular Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: f06397aa-f7c6-49ba-a17f-c58683ddbd94
+
+	/// Effective VAT rate ([VAT Rate]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'VAT Rate Actual Year' =
+			
+			YearToDay( [VAT Rate] )
+		formatString: 0%;-0%;0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: 115b4d97-d60d-4cc7-84bd-041413603534
+
+	/// Marketing coefficient as a share of the regular price without VAT, this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Percentage.
+	measure 'Marketing Coefficient Actual Year %' =
+			
+			YearToDay( [Marketing Coefficient %] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: 60cf6d3d-e54a-45b0-b0f3-b91a43cc3a0c
+
+		annotation RagColor = UpIsGood
+
+	/// Marketing accumulated ([Marketing Accumulated]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Marketing Accumulated Actual Year' =
+			
+			YearToDay( [Marketing Accumulated] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 17a15d06-b730-4ddd-8a21-7ba999467196
+
+	/// Average cost price per unit sold, weighted by quantity, without VAT, so unit cost x quantity gives back the cost of sales. Value per unit.
+	measure 'Cost Price' =
+			-- Quantity-weighted: value over quantity, so unit price x quantity gives back the
+			-- money. An average over invoice lines counted a 1-piece line as much as a
+			-- 1,000-piece one and leaned toward small, undiscounted orders.
+			CALCULATE(
+			    DIVIDE( SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[UnitCost] ), SUM( FactSalesLine[Quantity] ) ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Prices
+		lineageTag: 6e872a72-6634-4598-8a71-78dc8bf25136
+
+	/// Average supplier price per unit of goods bought: after the supplier's discounts, without VAT, weighted by quantity (FactPurchaseLine[SupplierPrice]). What the supplier charged - not the landed cost. Value per unit.
+	measure 'Supplier Price' =
+			CALCULATE(
+			    DIVIDE( SUMX( FactPurchaseLine, FactPurchaseLine[Quantity] * FactPurchaseLine[SupplierPrice] ), SUM( FactPurchaseLine[Quantity] ) ),
+			    DimDocumentType[IsPurchase] = TRUE
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Prices
+		lineageTag: 9b19c7c6-9bc7-4e62-9e28-6bc2ebab5d0b
+
+	/// Average regular selling price per unit sold, with VAT, before discounts, weighted by quantity. Value per unit.
+	measure 'Regular Price' =
+			
+			-- Quantity-weighted: value over quantity, so unit price x quantity gives back the
+			-- money. An average over invoice lines counted a 1-piece line as much as a
+			-- 1,000-piece one and leaned toward small, undiscounted orders.
+			CALCULATE(
+			    DIVIDE( SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[ListPrice] ), SUM( FactSalesLine[Quantity] ) ),
+			    DimDocumentType[IsSalesOut] = TRUE()
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Prices
+		lineageTag: 43cd61c8-d375-4c9b-af72-14c2b3179922
+
+	/// Price up to distribution per unit sold: cost price plus distribution cost and distribution profit, both on the net price without VAT. Value per unit, weighted by quantity.
+	measure 'Mark Up' =
+			
+			-- Price up to distribution per unit: the three weighted parts, so the column
+			-- equals Cost Price + Distribution Cost + Distribution Profit on every row.
+			[Cost Price] + [Distribution Cost] + [Distribution Profit]
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: d7ac629d-ea8d-4472-bcef-85743528a949
+
+	/// The product's distribution profit rate, read from DimBrand through its brand - the same rate the price calculation charges. Percentage; blank unless one product with sales is in context.
+	measure 'Distribution Profit %' =
+			
+			-- From DimBrand, not a literal, so it follows the table the price calculation and the
+			-- stock NRV read. One product only: across several products the rate has no single value.
+			IF(
+			    NOT ISBLANK( [Cost Price] ) && HASONEVALUE( DimProduct[ProductId] ),
+			    LOOKUPVALUE( DimBrand[DistributionProfitRate], DimBrand[BrandId], SELECTEDVALUE( DimProduct[BrandId] ) )
+			)
+		formatString: 0%;-0%;0%
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 69f64686-540f-4982-8f64-f806c3b37df2
+
+	/// Distribution profit per unit sold: the brand's rate (DimBrand[DistributionProfitRate]) on the net price without VAT, weighted by quantity. Value per unit.
+	measure 'Distribution Profit' =
+			-- Quantity-weighted, like the price measures: the rate charged on the net price
+			-- without VAT, per unit sold. Iterates DimBrand, not the sales lines - the rate is
+			-- a brand attribute, so net sales per brand x rate equals the line sum.
+			CALCULATE(
+			    DIVIDE(
+			        SUMX( DimBrand, DimBrand[DistributionProfitRate] * [Sales Net Price ex VAT] ),
+			        SUM( FactSalesLine[Quantity] )
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 970c474f-db11-4a68-8378-ff8bfb42747d
+
+	/// Secondary position per unit sold: the brand's rate (DimBrand[SecondaryPositionRate]) on the net price without VAT, weighted by quantity. Value per unit.
+	measure 'Position Per Unit' =
+			-- Iterates DimBrand: the rate is a brand attribute, so net sales per brand x rate equals the line sum.
+			CALCULATE(
+			    DIVIDE(
+			        SUMX( DimBrand, DimBrand[SecondaryPositionRate] * [Sales Net Price ex VAT] ),
+			        SUM( FactSalesLine[Quantity] )
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 0ffa71ab-bc9c-4729-b09d-a50c8d220294
+
+	/// The product's secondary position rate, read from DimBrand through its brand - the same rate the price calculation charges. Percentage; blank unless one product with sales is in context.
+	measure 'Position Product Rate' =
+			
+			-- From DimBrand, not a literal, so it follows the table the price calculation and the
+			-- stock NRV read. One product only: across several products the rate has no single value.
+			IF(
+			    NOT ISBLANK( [Cost Price] ) && HASONEVALUE( DimProduct[ProductId] ),
+			    LOOKUPVALUE( DimBrand[SecondaryPositionRate], DimBrand[BrandId], SELECTEDVALUE( DimProduct[BrandId] ) )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: ceafac3b-04f8-4e78-88b8-db1b85e066d8
+
+	/// Annual bonus per unit sold: the brand's rate (DimBrand[AnnualBonusRate]) on the net price without VAT, weighted by quantity. Value per unit.
+	measure 'Bonus Per Unit' =
+			-- Iterates DimBrand: the rate is a brand attribute, so net sales per brand x rate equals the line sum.
+			CALCULATE(
+			    DIVIDE(
+			        SUMX( DimBrand, DimBrand[AnnualBonusRate] * [Sales Net Price ex VAT] ),
+			        SUM( FactSalesLine[Quantity] )
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: ebdcb6f3-20bd-4dec-a4b4-32f2f3fc800e
+
+	/// The product's annual bonus rate, read from DimBrand through its brand - the same rate the price calculation charges. Percentage; blank unless one product with sales is in context.
+	measure 'Bonus Product Rate' =
+			
+			-- From DimBrand, not a literal, so it follows the table the price calculation and the
+			-- stock NRV read. One product only: across several products the rate has no single value.
+			IF(
+			    NOT ISBLANK( [Cost Price] ) && HASONEVALUE( DimProduct[ProductId] ),
+			    LOOKUPVALUE( DimBrand[AnnualBonusRate], DimBrand[BrandId], SELECTEDVALUE( DimProduct[BrandId] ) )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 638fc7b2-0005-431f-a42a-3e202e8f8860
+
+	/// Distribution cost per unit sold: the brand's rate (DimBrand[DistributionCostRate]) on the net price without VAT, weighted by quantity. Value per unit.
+	measure 'Distribution Cost' =
+			-- Iterates DimBrand: the rate is a brand attribute, so net sales per brand x rate equals the line sum.
+			CALCULATE(
+			    DIVIDE(
+			        SUMX( DimBrand, DimBrand[DistributionCostRate] * [Sales Net Price ex VAT] ),
+			        SUM( FactSalesLine[Quantity] )
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 1204a20e-0d22-47d7-93c6-86efbc23ee1a
+
+	/// The product's distribution cost rate, read from DimBrand through its brand - the same rate the price calculation charges. Percentage; blank unless one product with sales is in context.
+	measure 'Distribution Cost %' =
+			
+			-- From DimBrand, not a literal, so it follows the table the price calculation and the
+			-- stock NRV read. One product only: across several products the rate has no single value.
+			IF(
+			    NOT ISBLANK( [Cost Price] ) && HASONEVALUE( DimProduct[ProductId] ),
+			    LOOKUPVALUE( DimBrand[DistributionCostRate], DimBrand[BrandId], SELECTEDVALUE( DimProduct[BrandId] ) )
+			)
+		formatString: 0%;-0%;0%
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 5ecbbf0b-7fa9-4e79-8f1d-e84a5e46d9cb
+
+	/// Trade budget accumulated this year to date: marketing accumulated, credit notes received and service invoices. Value.
+	measure 'Budget Accumulated Actual Year' = [Marketing Accumulated Actual Year] + [Credit Notes Received Actual Year] + [Service Invoices Actual Year]
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 85b7f71e-3154-45f8-8007-e562262c94f0
+
+	/// Supplier price per unit ([Supplier Price]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value per unit.
+	measure 'Supplier Price Actual Year' =
+			
+			YearToDay( [Supplier Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: 936f352e-1291-4baf-9096-9db941a70d2e
+
+	/// Effective VAT rate on regular sales: VAT over sales without VAT, weighted by quantity. Percentage.
+	measure 'VAT Rate' =
+			
+			-- The effective VAT rate: VAT over the base without VAT, both summed by quantity,
+			-- rather than an average of the line rates.
+			VAR _base =
+			    CALCULATE( SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[ListPrice] * FactSalesLine[ExVatFactor] ), DimDocumentType[IsSalesOut] = TRUE() )
+			VAR _with_vat =
+			    CALCULATE( SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[ListPrice] ), DimDocumentType[IsSalesOut] = TRUE() )
+			RETURN
+			    DIVIDE( _with_vat - _base, _base )
+		formatString: 0%;-0%;0%
+		displayFolder: Calculation Roots\Prices
+		lineageTag: fd7e5270-9c04-4657-9a98-c91fcc233df1
+
+	/// Quantity sold on sales-out documents. Units.
+	measure 'Sales Quantity' =
+			
+			CALCULATE(
+				SUM(FactSalesLine[Quantity]),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		displayFolder: Calculation Roots\Sales
+		lineageTag: 0612dbff-2279-4171-a29f-450047d791b6
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Marketing budget accrued: quantity sold x the marketing coefficient of each line - the price after the regular discount, without VAT, less the cost price, less the four brand rates taken on the net price without VAT - summed. The price calculation. Value. Negative where the price does not cover cost and the rates - that is the calculation's output, not an error.
+	measure 'Marketing Accumulated' =
+			-- Summed, not averaged: the budget is the per-piece coefficient x quantity, so it
+			-- accumulates across lines. The rates are read per line from DimBrand rather than from
+			-- the Distribution Cost % family, which is BLANK unless exactly one product is in context.
+			VAR _rows =
+			    CALCULATETABLE(
+			        FactSalesLine,
+			        DimDocumentType[IsSalesOut] = TRUE
+			    )
+			RETURN
+			    SUMX(
+			        _rows,
+			        VAR _rate =
+			            RELATED( DimBrand[DistributionCostRate] )
+			                + RELATED( DimBrand[DistributionProfitRate] )
+			                + RELATED( DimBrand[AnnualBonusRate] )
+			                + RELATED( DimBrand[SecondaryPositionRate] )
+			        -- the price after the regular discount (GrossPrice), less cost, less
+			        -- the rates charged on the net price; both prices without VAT
+			        VAR _gross_price = FactSalesLine[GrossPrice] * FactSalesLine[ExVatFactor]
+			        VAR _net_price = FactSalesLine[NetPrice] * FactSalesLine[ExVatFactor]
+			        VAR _coefficient = _gross_price - FactSalesLine[UnitCost] - _net_price * _rate
+			        RETURN
+			            FactSalesLine[Quantity] * _coefficient
+			    )
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 032e1288-cb0b-43fb-ab27-72fe76b30a17
+
+	/// Pieces per pack of the product, shown for products with sales this year. Pieces.
+	measure 'Pieces per Pack' =
+			
+			VAR _product_sales = CALCULATE(
+			        [Sales Net Price Actual Year],
+			        ALLEXCEPT( DimProduct, DimProduct[ProductId] )
+			    )
+			VAR _pieces_per_pack = SELECTEDVALUE(DimProduct[PiecesPerPack],BLANK())
+			RETURN IF( _product_sales > 2, _pieces_per_pack, BLANK())
+		formatString: #,0
+		displayFolder: Calculation Roots\Prices
+		lineageTag: ccdd916d-f5cb-45b3-8972-bcc4b83ac6a9
+
+	/// Packs per pallet of the product, shown for products with sales this year. Packs.
+	measure 'Packs per Pallet' =
+			
+			VAR _product_sales = CALCULATE(
+			        [Sales Net Price Actual Year],
+			        ALLEXCEPT( DimProduct, DimProduct[ProductId] )
+			    )
+			VAR _packs_per_pallet = SELECTEDVALUE(DimProduct[PacksPerPallet],BLANK())
+			RETURN IF( _product_sales > 2, _packs_per_pallet, BLANK())
+		formatString: #,0
+		displayFolder: Calculation Roots\Prices
+		lineageTag: ab8631c5-b05b-4fdf-9691-63c9a80de8aa
+
+	/// Supplier price per unit ([Supplier Price]), in the prior year: the date slicers' window one year back, inside last calendar year. Value per unit.
+	measure 'Supplier Price Prior Year' =
+			
+			PrevYear( [Supplier Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: 3f893cf4-71ab-41df-b2b9-45e16d1b7734
+
+	/// Cost price per unit ([Cost Price]), in the prior year: the date slicers' window one year back, inside last calendar year. Value per unit.
+	measure 'Cost Price Prior Year' =
+			
+			PrevYear( [Cost Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: c511d5e4-f6af-49a1-9ae0-0f9e7835fd60
+
+	/// Regular price per unit ([Regular Price]), in the prior year: the date slicers' window one year back, inside last calendar year. Value per unit.
+	measure 'Regular Price Prior Year' =
+			
+			PrevYear( [Regular Price] )
+		formatString: #,0.00
+		displayFolder: Prices\Product Prices
+		lineageTag: f8f30ccc-e363-4f66-9fa8-983df3a9a13b
+
+	/// Marketing coefficient per unit sold, as the price calculation builds it: the price after the regular discount without VAT (Gross Price ex VAT), less cost price, less the four brand rates (distribution cost, distribution profit, annual bonus, secondary position) taken on the net price. Value per unit, weighted by quantity; x quantity it is Marketing Accumulated. Negative where the price does not cover cost and the rates.
+	measure 'Marketing Coefficient' =
+			-- Every part is weighted by quantity, so the Calculation page columns add up and
+			-- x quantity it gives Marketing Accumulated exactly.
+			[Gross Price ex VAT] - [Cost Price]
+			    - ( [Distribution Cost] + [Distribution Profit] + [Bonus Per Unit] + [Position Per Unit] )
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 3143f318-8ca5-46ad-825a-18d8f903eb35
+
+	/// Marketing Coefficient as a share of the price after the regular discount, without VAT, both per unit and weighted by quantity. Percentage.
+	measure 'Marketing Coefficient %' = DIVIDE( [Marketing Coefficient], [Gross Price ex VAT] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Calculation Roots\Price Calculation
+		lineageTag: 6eb7cfd0-ac88-4ae3-896e-115b4e19e213
+
+	/// Secondary position money set aside in the price: the DimBrand[SecondaryPositionRate] rate on the net price without VAT, on every unit sold (sales-out documents). Value.
+	measure 'Position Accumulated Period' =
+			
+			-- Rate x net sales without VAT per brand, summed: the same number as quantity x
+			-- SecondaryPositionRate line by line (the same pattern as Bonus Accumulated Period),
+			-- without evaluating a measure per sales line.
+			-- Goods only: the net sales is Sales Net Price ex VAT, the same base as the four per-unit rates.
+			CALCULATE(
+			    SUMX(
+			        DimBrand,
+			        DimBrand[SecondaryPositionRate]
+			            * [Sales Net Price ex VAT]
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: b4b7f377-3f02-4cec-929b-386980863563
+
+	/// Annual bonus set aside in the price: the DimBrand[AnnualBonusRate] rate on the net price without VAT, on every unit sold (sales-out documents). Value.
+	measure 'Bonus Accumulated Period' =
+			
+			-- Rate x net sales without VAT per brand, summed: the same number as quantity x
+			-- AnnualBonusRate line by line, without evaluating a measure per sales line.
+			-- Goods only: the net sales is Sales Net Price ex VAT, the same base as the four per-unit rates.
+			CALCULATE(
+			    SUMX(
+			        DimBrand,
+			        DimBrand[AnnualBonusRate]
+			            * [Sales Net Price ex VAT]
+			    ),
+			    KEEPFILTERS( DimDocumentType[IsSalesOut] = TRUE )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 35809f69-40ef-41f4-864a-ee76bb514790
+
+	/// Trade budget spent this year to date: the trade terms, the extra discount without VAT and the credit notes issued. Value.
+	measure 'Budget Spent Actual Year' = [Trade Terms Spent Actual Year] + YearToDay( [Extra Discount Without VAT] ) + [Credit Notes Issued Actual Year]
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 80cd6ae8-ce7a-4b9e-b2df-e44f7e244920
+
+	/// Trade budget accumulated less spent, this year to date; negative when more was spent than accumulated. Value.
+	measure 'Budget Difference Actual Year' =
+			
+			[Budget Accumulated Actual Year]-
+			[Budget Spent Actual Year]
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: c5b789c0-17cf-4db8-a54c-506db9df1477
+
+	/// Marketing coefficient as a share of the regular price without VAT, in the prior year: the date slicers' window one year back, inside last calendar year. Percentage.
+	measure 'Marketing Coefficient Prior Year %' =
+			
+			PrevYear( [Marketing Coefficient %] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Prices\Price Calculation
+		lineageTag: e8356ea8-f60b-4cef-86f9-709f1e363c34
+
+	/// Gross margin: gross profit over net sales without VAT, goods only. Percentage.
+	measure 'Gross Margin' =
+			
+			VAR _gross_profit = [Gross Profit]
+			VAR _net_sales = [Sales Net Price ex VAT]
+			
+			RETURN
+			    DIVIDE( _gross_profit, _net_sales)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Calculation Roots\Profit
+		lineageTag: edde5c0b-1acf-4f4a-9a49-f821f1d1adac
+
+	/// Average list selling price per unit sold, without VAT, before discounts, weighted by quantity. Value per unit.
+	measure 'Regular Price ex VAT' =
+			CALCULATE(
+			    DIVIDE( SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[ListPrice] * FactSalesLine[ExVatFactor] ), SUM( FactSalesLine[Quantity] ) ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Prices
+		lineageTag: 26d0ff6c-a5b6-4f1d-b8dc-3b86a10f9c83
+
+	/// Net sales without VAT: quantity x the net price with the VAT on the line taken out, on sales-out documents. The base of Gross Margin and of the brand rates. Value.
+	measure 'Sales Net Price ex VAT' =
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity] * FactSalesLine[NetPrice] * FactSalesLine[ExVatFactor] ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		displayFolder: Calculation Roots\Sales
+		lineageTag: 0e466ca3-9202-44c9-b776-65642efe9c95
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales without VAT ([Sales Net Price ex VAT]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Sales Net Price ex VAT Actual Year' =
+			
+			YearToDay( [Sales Net Price ex VAT] )
+		displayFolder: Sales\Net Price ex VAT
+		lineageTag: 5426502d-da6f-402c-af09-0ea70bcce312
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Theme colour name for [Marketing Coefficient Actual Year %]: good when it rises, neutral at 0, blank when it is blank. Generated by scripts/rag_colors.py from the RagColor annotation on [Marketing Coefficient Actual Year %]; edit the annotation, not this measure.
+	measure 'Marketing Coefficient Actual Year % Color' = RagColor( [Marketing Coefficient Actual Year %], 0 )
+		isHidden
+		displayFolder: Formatting\RAG Color
+		lineageTag: 6568dccd-2b14-44fa-a9cd-35904c49e526
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Name of the brand in context (DimBrand). Text; blank unless one brand is in context.
+	measure 'Brand Supplier Name' =
+			
+			SELECTEDVALUE( DimBrand[BrandName] )
+		displayFolder: Lookup\Brand
+		lineageTag: 66ed9a17-1fb7-4c83-99d4-f390ab7060e4
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Budget Spent year-to-date as a share of net sales year-to-date. Percentage. Both sides without VAT (spent is ex-VAT throughout). Measured against NET sales, unlike Extra Discount Rate which divides by the gross selling price, so the two are not directly comparable.
+	measure 'Marketing Budget Spent Rate' =
+			
+			DIVIDE( [Budget Spent Actual Year], [Sales Net Price ex VAT Actual Year] )
+		displayFolder: Lookup\Marketing
+		lineageTag: 984eb38f-1291-40c1-95b5-086cc7d59472
+
+		formatStringDefinition =
+				VAR _unit = " ""of sales"""
+				RETURN
+				    "0.00%" & _unit
+
+	/// Budget Spent over Budget Accumulated, year-to-date. Percentage. Above 100% means more has been spent than accumulated - Budget Difference is the same fact in value.
+	measure 'Marketing Budget Spent Of Accumulated' =
+			
+			DIVIDE( [Budget Spent Actual Year], [Budget Accumulated Actual Year] )
+		displayFolder: Lookup\Marketing
+		lineageTag: 933dab34-d726-4753-bf41-11f068b97337
+
+		formatStringDefinition =
+				VAR _unit = " ""of accumulated"""
+				RETURN
+				    "0.0%" & _unit
+
+	/// Price/volume bridge, volume half: how much of the year-on-year sales change came from selling more or fewer units, holding price at last year. Millions.
+	measure 'Marketing Quantity Effect' =
+			
+			-- Sales = quantity x price, so the change splits exactly into this and
+			-- Marketing Price Effect. Each factor is held at the OPPOSITE period from the one
+			-- that moves, or a residual appears that belongs to neither measure.
+			VAR _quantity_prior_year = [Sales Quantity Prior Year YTD]
+			VAR _quantity_actual_year = [Sales Quantity Actual Year]
+			VAR _price_prior_year = DIVIDE( [Sales Net Price Prior Year YTD], _quantity_prior_year )
+			RETURN
+			    DIVIDE( ( _quantity_actual_year - _quantity_prior_year ) * _price_prior_year, 1000000 )
+		displayFolder: Lookup\Marketing
+		lineageTag: fc62dea8-7108-4cc6-b80e-c3db4cd7840e
+
+		formatStringDefinition =
+				VAR _unit = """M"""
+				RETURN
+				    "+#,0.0 " & _unit & ";-#,0.0 " & _unit & ";0 " & _unit
+
+		annotation RagColor = UpIsGood
+
+	/// Price/volume bridge, price half: how much of the year-on-year sales change came from a higher or lower average price, valued at this year quantity. Millions.
+	measure 'Marketing Price Effect' =
+			
+			VAR _quantity_prior_year = [Sales Quantity Prior Year YTD]
+			VAR _quantity_actual_year = [Sales Quantity Actual Year]
+			VAR _price_prior_year = DIVIDE( [Sales Net Price Prior Year YTD], _quantity_prior_year )
+			VAR _price_actual_year = DIVIDE( [Sales Net Price Actual Year], _quantity_actual_year )
+			RETURN
+			    DIVIDE( _quantity_actual_year * ( _price_actual_year - _price_prior_year ), 1000000 )
+		displayFolder: Lookup\Marketing
+		lineageTag: 8e0777b0-f4cc-49a5-b83f-e4fd3426918b
+
+		formatStringDefinition =
+				VAR _unit = """M"""
+				RETURN
+				    "+#,0.0 " & _unit & ";-#,0.0 " & _unit & ";0 " & _unit
+
+		annotation RagColor = UpIsGood
+
+	/// Names the pattern behind the year-on-year change by the sign of the price and volume effects. Text; blank until both effects resolve.
+	measure 'Marketing Verdict' =
+			
+			VAR _price = [Marketing Price Effect]
+			VAR _quantity = [Marketing Quantity Effect]
+			-- A zero effect takes the other effect's sign: >= 0 would count an
+			-- unchanged price or volume as growth. Both zero is no change to explain.
+			VAR _price_sign = IF( _price = 0, SIGN( _quantity ), SIGN( _price ) )
+			VAR _quantity_sign = IF( _quantity = 0, SIGN( _price ), SIGN( _quantity ) )
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK( _price ) || ISBLANK( _quantity ), BLANK(),
+			        _price_sign = 0 && _quantity_sign = 0, BLANK(),
+			        _price_sign > 0 && _quantity_sign > 0, "Growth from price and volume",
+			        _price_sign > 0 && _quantity_sign < 0, "Growth from price only",
+			        _price_sign < 0 && _quantity_sign > 0, "Higher volume, lower price",
+			        "Decline in both"
+			    )
+		displayFolder: Lookup\Marketing
+		lineageTag: 16af41c8-d5ff-4dac-aa96-d1f583bfb25a
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Net sales year-to-date. Value; a Lookup view of Sales Net Price Actual Year for the marketing tooltip.
+	measure 'Marketing Product Sales' =
+			
+			[Sales Net Price Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: c4d9b138-f3ee-43c3-b18e-2122d4cbe2fc
+
+		formatStringDefinition =
+				"#,0"
+
+	/// Gross margin year-to-date: profit over net sales without VAT, goods only. Percentage; a Lookup view of Gross Margin Actual Year for the marketing tooltip.
+	measure 'Marketing Product Gross Margin' =
+			
+			[Gross Margin Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: d19df0b7-62db-4baa-b28f-e8d5adf0c3f9
+
+		formatStringDefinition =
+				VAR _unit = " ""of sales"""
+				RETURN
+				    "0.0%" & _unit
+
+	/// Gross profit year-to-date: net price without VAT less cost, goods only. Value; a Lookup view of Gross Profit Actual Year for the marketing tooltip.
+	measure 'Marketing Product Gross Profit' =
+			
+			[Gross Profit Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: e6b6c4ee-90e5-45c5-bd12-e8caf2ea11c0
+
+		formatStringDefinition =
+				"#,0"
+
+	/// Budget spent year-to-date: extra discounts, credit notes issued and marketing invoices. Value; a Lookup view of Budget Spent Actual Year for the marketing tooltip.
+	measure 'Budget Spent | Tooltip' =
+			
+			[Budget Spent Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: 04f23e42-b374-44bc-8758-5f47d0d5edce
+
+		formatStringDefinition =
+				"#,0"
+
+	/// Budget accumulated year-to-date: the marketing budget from the price calculation plus credit notes received; negative where the margin does not cover the four rates. Value; a Lookup view of Budget Accumulated Actual Year for the marketing tooltip.
+	measure 'Budget Accumulated | Tooltip' =
+			
+			[Budget Accumulated Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: 3b316840-9caa-4d60-9a2c-7399edecd515
+
+		formatStringDefinition =
+				"#,0"
+
+	/// Budget accumulated less budget spent, year-to-date; negative is overspent. Value; a Lookup view of Budget Difference Actual Year for the marketing tooltip.
+	measure 'Budget Difference | Tooltip' =
+			
+			[Budget Difference Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: 6e193d84-1e1c-4f02-b1bf-7aaaf3b7915b
+
+		formatString: +#,0;-#,0;#,0
+
+		annotation RagColor = UpIsGood
+
+	/// Extra discount given year-to-date. Value; a Lookup view of Extra Discount Actual Year for the marketing tooltip.
+	measure 'Extra Discount | Tooltip' =
+			
+			[Extra Discount Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: 9045e589-8aa1-4ec7-8d06-e182dd00aec5
+
+		formatStringDefinition =
+				"#,0"
+
+	/// Extra discount as a share of sales at the gross selling price, year-to-date. Percentage; a Lookup view of Extra Discount Rate Actual Year for the marketing tooltip.
+	measure 'Extra Discount Rate | Tooltip' =
+			
+			[Extra Discount Rate Actual Year]
+		displayFolder: Lookup\Marketing
+		lineageTag: ff037ee2-2bd9-4fff-a933-3ed5dd52e0b2
+
+		formatStringDefinition =
+				VAR _unit = " ""of gross sales"""
+				RETURN
+				    "0.00%" & _unit
+
+	/// Theme colour name for [Budget Difference | Tooltip]: good when it rises, neutral at 0, blank when it is blank. Generated by scripts/rag_colors.py from the RagColor annotation on [Budget Difference | Tooltip]; edit the annotation, not this measure.
+	measure 'Budget Difference Color | Tooltip' = RagColor( [Budget Difference | Tooltip], 0 )
+		isHidden
+		displayFolder: Formatting\RAG Color
+		lineageTag: 57d6a9b6-e78b-4076-818e-d5a8efa449f2
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Theme colour name for [Marketing Quantity Effect]: good when it rises, neutral at 0, blank when it is blank. Generated by scripts/rag_colors.py from the RagColor annotation on [Marketing Quantity Effect]; edit the annotation, not this measure.
+	measure 'Marketing Quantity Effect Color' = RagColor( [Marketing Quantity Effect], 0 )
+		isHidden
+		displayFolder: Formatting\RAG Color
+		lineageTag: a4f88e20-a6ea-4540-95a8-cc53ab1af142
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Theme colour name for [Marketing Price Effect]: good when it rises, neutral at 0, blank when it is blank. Generated by scripts/rag_colors.py from the RagColor annotation on [Marketing Price Effect]; edit the annotation, not this measure.
+	measure 'Marketing Price Effect Color' = RagColor( [Marketing Price Effect], 0 )
+		isHidden
+		displayFolder: Formatting\RAG Color
+		lineageTag: ae1b52fc-e0be-4d11-83aa-c5c97475e968
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Theme colour name for the marketing verdict: good when price and volume both add sales, bad when both cost sales, neutral for a mixed verdict.
+	measure 'Marketing Verdict Color' =
+			VAR _first_effect = [Marketing Price Effect]
+			VAR _second_effect = [Marketing Quantity Effect]
+			-- same signs as the verdict text, a zero effect taking the other's sign, so colour
+			-- and wording always agree: both up is good, both down is bad, a mixed verdict is neither
+			VAR _first_sign = IF( _first_effect = 0, SIGN( _second_effect ), SIGN( _first_effect ) )
+			VAR _second_sign = IF( _second_effect = 0, SIGN( _first_effect ), SIGN( _second_effect ) )
+			RETURN
+			    IF(
+			        NOT ( ISBLANK( _first_effect ) || ISBLANK( _second_effect ) || ( _first_sign = 0 && _second_sign = 0 ) ),
+			        RagColor( _first_sign + _second_sign, 0 )
+			    )
+		isHidden
+		displayFolder: Formatting\RAG Color
+		lineageTag: 8868b698-c7a5-4d18-8e04-99922c0fa3de
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// The extra discount without VAT: quantity x (price after the regular discount - net price), with the VAT on the line taken out. The Budget Spent family's discount part, on the same basis as the other spend, which is all without VAT. Value.
+	measure 'Extra Discount Without VAT' =
+			CALCULATE(
+			    SUMX(
+			        FactSalesLine,
+			        FactSalesLine[Quantity]
+			            * ( FactSalesLine[GrossPrice] - FactSalesLine[NetPrice] )
+			            * FactSalesLine[ExVatFactor]
+			    ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 49abade7-7e70-4f05-86c0-e575b30c14fb
+
+	/// Annual bonus spent: the cost of the bonus terms in the months of this year to date, each month its own - a percentage term's rate on the sales without VAT of its outlet and brand in that month, a fixed term's value x units (FactTradeTermMonth). Value.
+	measure 'Bonus Spent' =
+			YearToDay(
+			    CALCULATE(
+			        SUM( FactTradeTermMonth[Spent] ),
+			        FactTradeTermMonth[TermGroup] = "Bonus"
+			    )
+			)
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 6b733c65-2dcb-46cf-8866-831a4dd85c60
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// The bonus rate set aside in the price (Bonus Accumulated Period) this year to date. Value.
+	measure 'Bonus Accumulated' = YearToDay( [Bonus Accumulated Period] )
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 055bdecd-4067-4326-bc31-2bdf43a125eb
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Customers with a bonus term this year whose bonus spent is more than the bonus rate their own sales set aside (Bonus Difference below zero). Count.
+	measure 'Bonus Spent Above Accumulated Customers Count' =
+			COUNTROWS(
+			    FILTER(
+			        TermCustomers( "Bonus" ),
+			        -- the customer's difference, its terms and its sales through DimPartner
+			        CALCULATE( [Bonus Difference], TREATAS( { FactTradeTerm[PartnerId] }, DimPartner[PartnerId] ) ) < 0
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: f961c136-681a-4178-8d9e-aa89ea18f3ee
+
+	/// What the customers spent beyond the bonus rate their own sales set aside: the sum of their negative Bonus Difference. Value, negative.
+	measure 'Bonus Spent Above Accumulated' =
+			SUMX(
+			    FILTER(
+			        ADDCOLUMNS(
+			            TermCustomers( "Bonus" ),
+			            "@Difference", CALCULATE( [Bonus Difference], TREATAS( { FactTradeTerm[PartnerId] }, DimPartner[PartnerId] ) )
+			        ),
+			        [@Difference] < 0
+			    ),
+			    [@Difference]
+			)
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: f00c744c-344c-4340-accf-3df3114b459d
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), TRUE)
+
+	/// Secondary positions in the trade-terms register that start this year to date (every position type and marketing term). Count.
+	measure 'Positions Count' =
+			YearToDay(
+			    CALCULATE(
+			        COUNTROWS( FactTradeTerm ),
+			        FactTradeTerm[TermGroup] = "Position"
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 0b893ade-87f9-47d4-b46d-9b717010a054
+
+	/// The secondary-position rate set aside in the price (DimBrand[SecondaryPositionRate]). Percentage.
+	measure 'Position Rate' = CALCULATE( MAX( DimBrand[SecondaryPositionRate] ), REMOVEFILTERS( DimBrand ) )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: c1e21565-73ab-4310-96ef-41fb0d754d30
+
+	/// Position Accumulated Period this year to date: the position rate (DimBrand[SecondaryPositionRate]) of net sales without VAT that the price sets aside for secondary positions. Value.
+	measure 'Position Accumulated' = YearToDay( [Position Accumulated Period] )
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 1edb9840-f21a-4517-8c1f-415c17e3740b
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales without VAT this year to date: the base of the position rate set aside. Value.
+	measure 'Position Sales' = [Sales Net Price ex VAT Actual Year]
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 35caca50-553d-4612-9407-0cb6990d609d
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Position cost in the months of this year to date, each month its own, the current month included: a fixed position's value x units in each month it runs, a percentage position's rate on the outlet's sales of the brand in that month (FactTradeTermMonth). Without VAT. Value.
+	measure 'Position Spent' =
+			YearToDay(
+			    CALCULATE(
+			        SUM( FactTradeTermMonth[Spent] ),
+			        FactTradeTermMonth[TermGroup] = "Position"
+			    )
+			)
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: c38c7382-5306-42cf-a917-1638a4bd30d0
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Credit notes received from suppliers this year to date, by brand: the budget a supplier gives back, set against Position Spent per brand as a check. Value.
+	measure 'Position Credit Notes' = [Credit Notes Received Actual Year]
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 6610c9bc-20b5-4a2d-bc79-99c1c35447c7
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// What the position rate set aside leaves after the position cost: Position Accumulated less Position Spent. Value.
+	measure 'Position Difference' = [Position Accumulated] - [Position Spent]
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 5f7a2d0a-d277-436e-a6e0-abc6bc7dec7f
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), TRUE)
+
+	/// Position cost as a share of net sales: Position Spent over Position Sales - directly comparable with the position rate set aside. Percentage.
+	measure 'Position Spent Rate' = DIVIDE( [Position Spent], [Position Sales] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: a6a2621a-efd3-4b53-920f-b2403eb36d45
+
+	/// Average monthly value of the fixed positions that have one and start this year to date: value x units per month, averaged over the positions. Value per month.
+	measure 'Position Average Monthly Price' =
+			YearToDay(
+			    CALCULATE(
+			        AVERAGE( FactTradeTerm[MonthlyValue] ),
+			        FactTradeTerm[TermGroup] = "Position",
+			        FactTradeTerm[IsPercentage] = FALSE,
+			        FactTradeTerm[MonthlyValue] > 0
+			    )
+			)
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 8fdc32ba-e7e4-4796-b8ee-811f1813d6fa
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Brands with position cost this year but no credit note received: their positions are committed and nothing has been given back against them. Count.
+	measure 'Position Suppliers Without Credit Note Count' =
+			COUNTROWS(
+			    FILTER(
+			        VALUES( DimBrand[BrandId] ),
+			        [Position Spent] > 0 && ISBLANK( [Position Credit Notes] )
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: f920be44-923b-40b1-8739-056cb4522bc9
+
+	/// Position Accumulated on the sales of customers that have a position this year. Value.
+	measure 'Price Position' =
+			YearToDay(
+			    CALCULATE(
+			        [Position Accumulated Period],
+			        KEEPFILTERS( TREATAS( TermCustomers( "Position" ), DimPartner[PartnerId] ) )
+			    )
+			)
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 7539d5d7-a817-4e25-8703-267e7fb3d83b
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales without VAT this year to date of customers that have a position this year. Value.
+	measure 'Position Sales ex VAT' =
+			YearToDay(
+			    CALCULATE(
+			        [Sales Net Price ex VAT],
+			        KEEPFILTERS( TREATAS( TermCustomers( "Position" ), DimPartner[PartnerId] ) )
+			    )
+			)
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: a4cf8b1c-71be-42ea-84a1-28854dc27862
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// For customers with a position: the position rate set aside less the position cost. Negative where the positions cost more than the customer's sales set aside. Value.
+	measure 'Position Customer Difference' = [Price Position] - [Position Spent]
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: ba575b1b-a710-4f20-a4f0-70aacd9856bd
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), TRUE)
+
+	/// Position cost as a share of the sales of customers with a position. Percentage.
+	measure 'Position Customer Rate' = DIVIDE( [Position Spent], [Position Sales ex VAT] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: f7b7e2f5-c236-4a7a-9c09-231ebcd7d3cd
+
+	/// The annual-bonus rate the price sets aside (DimBrand[AnnualBonusRate]). Percentage.
+	measure 'Bonus Price Rate' = CALCULATE( MAX( DimBrand[AnnualBonusRate] ), REMOVEFILTERS( DimBrand ) )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 25f00647-38f1-4420-a82f-035701de5d1d
+
+	/// Extra invoice discounts this year to date, without VAT (Extra Discount Without VAT). Value.
+	measure 'Total Discounts' = YearToDay( [Extra Discount Without VAT] )
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 15a9a94c-e879-49dd-8929-71c295e89cc9
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// What the price sets aside and suppliers give back this year to date: the annual bonus and position rates, the marketing budget (Marketing Accumulated, negative where the price does not cover cost and the rates), credit notes received and service invoices. Value.
+	measure 'Total Accumulated' =
+			[Bonus Accumulated] + [Position Accumulated] + [Marketing Accumulated Actual Year]
+			    + [Credit Notes Received Actual Year] + [Service Invoices Actual Year]
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 30f80c14-7bc8-4bf3-aae2-f0bc63638468
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Trade investment spent this year to date: annual bonus, positions, campaigns, promotions, credit notes issued and extra discounts. Value.
+	measure 'Total Spent' =
+			[Bonus Spent] + [Position Spent] + YearToDay( [Campaigns] + [Promotions] )
+			    + [Credit Notes Issued Actual Year] + [Total Discounts]
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 25e0a6f4-71fb-421e-86b5-b9bf32650cc9
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Total Accumulated less Total Spent: what is left of the trade-investment money, negative where spending is not covered. Value.
+	measure 'Total Difference' = [Total Accumulated] - [Total Spent]
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 9c803930-c982-4632-999f-1f7a24d9927c
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), TRUE)
+
+	/// Net sales without VAT this year to date (sales-out documents): the base the cost rate is read against. Value.
+	measure 'Total Sales' = [Position Sales]
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: c651b5bf-ea83-4681-bf96-89172434b606
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Total Spent as a share of net sales this year to date. Percentage.
+	measure 'Total Spent Rate' = DIVIDE( [Total Spent], [Total Sales] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 776a93d5-20bf-41c3-88d7-a29d2f2ea68c
+
+	/// Total Accumulated as a share of net sales without VAT, goods only, this year to date: the sales the accumulations are set aside on. Percentage.
+	measure 'Total Accumulated Rate' = DIVIDE( [Total Accumulated], [Sales Net Price ex VAT Actual Year] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 15078f7b-7005-435d-9c4e-03800f4ef33a
+
+	/// How much of the spending the money set aside covers: Total Accumulated over Total Spent. Percentage.
+	measure 'Total Coverage' = DIVIDE( [Total Accumulated], [Total Spent] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 602ba293-379f-4a67-a29d-b913ba201a20
+
+	/// Customers whose trade investment this year costs more than 10 % of their sales. Count.
+	measure 'Total High Spent Customers Count' =
+			COUNTROWS(
+			    FILTER(
+			        VALUES( DimPartner[PartnerId] ),
+			        -- context transition per customer
+			        [Total Spent Rate] > 0.10
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 6b9525a0-c118-4f30-9780-7a37f643dd47
+
+	/// Total Spent on the customers whose trade investment costs more than 10 % of their sales. Value.
+	measure 'Total High Spent Amount' =
+			SUMX(
+			    FILTER( VALUES( DimPartner[PartnerId] ), [Total Spent Rate] > 0.10 ),
+			    [Total Spent]
+			)
+		displayFolder: Trade Marketing\Total Investment
+		lineageTag: 66f5c4a0-5fb5-4a22-9b17-875d8104951a
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Fixed positions with no value in the register: counted as positions, no cost. Count.
+	measure 'Fixed Without Price' =
+			YearToDay(
+			    CALCULATE(
+			        COUNTROWS( FactTradeTerm ),
+			        FactTradeTerm[TermGroup] = "Position",
+			        FactTradeTerm[IsPercentage] = FALSE,
+			        FactTradeTerm[MonthlyValue] = 0
+			    )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 4dfd2095-4ead-48d7-ac4e-8cea292c513d
+
+	/// Bonus Accumulated projected to the end of the year: so far, grossed up by the share of last year's accumulated that had come in by the same day (the seasonality the bonus projection also uses). Value.
+	measure 'Bonus Accumulated Year-End' =
+			-- the share of last year's full-year accumulated that had come in by today's date last year
+			VAR _last_year_to_date = YearToDay( PrevYear( [Bonus Accumulated Period] ) )
+			VAR _last_year_full = CALCULATE( PrevYear( [Bonus Accumulated Period] ), DimDate[Year] = YEAR( TODAY() ) )
+			RETURN
+			    DIVIDE( [Bonus Accumulated] * _last_year_full, _last_year_to_date )
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 45a08917-918e-41d2-b057-e3eba9b6e07e
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Position Accumulated projected to the end of the year: so far, grossed up by the share of last year's accumulated that had come in by the same day. Value.
+	measure 'Position Accumulated Year-End' =
+			-- the share of last year's full-year position accumulated that had come in by today's date last year
+			VAR _last_year_to_date = YearToDay( PrevYear( [Position Accumulated Period] ) )
+			VAR _last_year_full = CALCULATE( PrevYear( [Position Accumulated Period] ), DimDate[Year] = YEAR( TODAY() ) )
+			RETURN
+			    DIVIDE( [Position Accumulated] * _last_year_full, _last_year_to_date )
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 1cd4e46a-63bb-47ca-94c3-d4d8176fd032
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Position cost falling in this calendar year: the fixed positions for every month of the year they run, months still to come included, and the percentage positions on the sales so far (FactTradeTermMonth). A commitment from the register, not a forecast of payments. Value.
+	measure 'Position Spent Year-End' =
+			CALCULATE(
+			    SUM( FactTradeTermMonth[Spent] ),
+			    FactTradeTermMonth[TermGroup] = "Position",
+			    DimDate[Year] = YEAR( TODAY() )
+			)
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 9197550b-ef93-4284-aae4-1cbc6b0fbdda
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Marketing accumulated per product this year to date, as a share of the regular price without VAT: Marketing Coefficient Actual Year % under its own name and caption, for the Calculation page matrix beside Bonus and Position Product Rate Actual Year. The chart pairing current and prior year keeps Marketing Coefficient Actual Year %. Percentage.
+	measure 'Marketing Product Rate Actual Year' = [Marketing Coefficient Actual Year %]
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Prices\Price Calculation
+		lineageTag: 7e1a82f6-6a96-476f-93a6-120243073591
+
+	/// Customers with a bonus term this year to date in the trade-terms register. Count.
+	measure 'Bonus Customers Count' = COUNTROWS( TermCustomers( "Bonus" ) )
+		formatString: #,0
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 51a99919-4255-48de-a770-53c80130d597
+
+	/// Net sales without VAT this year to date of the customers with a bonus term this year: the base the bonus rate accumulates on. Value.
+	measure 'Sales ex VAT' =
+			YearToDay(
+			    CALCULATE(
+			        [Sales Net Price ex VAT],
+			        -- the customers with a bonus term, intersected with whatever customer filter is already set
+			        KEEPFILTERS( TREATAS( TermCustomers( "Bonus" ), DimPartner[PartnerId] ) )
+			    )
+			)
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 5b7bd541-8919-41c8-85b6-827cb317c998
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Bonus Accumulated Period (the bonus rate set aside in the price) this year to date, on the sales of the customers with a bonus term this year. Value.
+	measure 'Price Bonus' =
+			YearToDay(
+			    CALCULATE(
+			        [Bonus Accumulated Period],
+			        KEEPFILTERS( TREATAS( TermCustomers( "Bonus" ), DimPartner[PartnerId] ) )
+			    )
+			)
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: e5c0cbe7-13e4-4c7d-b61d-e9ef4f01ff0a
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Bonus Accumulated Period this year to date on the sales of customers with no bonus booked this year: set aside in the price and paid to nobody so far. Blank where it is zero, so a customer list shows only those customers. Value.
+	measure 'Bonus Not Given' =
+			VAR _accumulated = YearToDay( [Bonus Accumulated Period] )
+			VAR _without = _accumulated - [Price Bonus]
+			RETURN
+			    -- blank, not 0, for a customer with a bonus: the list of customers without one drops them.
+			    -- Rounded to the cent before the test: the two sums can differ by float residue for a bonus customer.
+			    IF( ROUND( _without, 2 ) <> 0, _without )
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: e7165e2b-e5a0-4baf-9aab-ba17202fd0df
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// Net sales without VAT this year to date, goods only, of the customers with no bonus term this year - the sales Bonus Not Given accumulates on; blank for a customer with a bonus term. Sales ex VAT plus this is all sales. Value.
+	measure 'Sales Without Bonus' =
+			
+			-- the customers in context less those with a bonus term this year, so a total row adds up the
+			-- customers without one instead of reading the company's sales
+			VAR _without = EXCEPT( VALUES( DimPartner[PartnerId] ), TermCustomers( "Bonus" ) )
+			RETURN
+			    YearToDay( CALCULATE( [Sales Net Price ex VAT], TREATAS( _without, DimPartner[PartnerId] ) ) )
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 9c538860-5476-4f46-839a-82db2f6abc4c
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), FALSE)
+
+	/// What the bonus costs as a share of the sales of the customers it is agreed with: Bonus Spent over Sales ex VAT - directly comparable with the bonus rate the price sets aside. Percentage.
+	measure 'Bonus Rate' = DIVIDE( [Bonus Spent], [Sales ex VAT] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: c43a92e4-8937-41df-bc41-b0d5d9e810f8
+
+	/// For a customer with a bonus term this year: the bonus rate its sales set aside less the bonus spent. Negative where more was spent than accumulated. Blank for customers without a bonus term. Value.
+	measure 'Bonus Difference' =
+			VAR _spent = [Bonus Spent]
+			RETURN
+			    -- blank, not the accumulated, for a customer with no bonus term
+			    IF( NOT ISBLANK( _spent ), [Price Bonus] - _spent )
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 1a12e1f4-eed7-46c9-832a-326bfb92acb1
+
+		formatStringDefinition = NumberFormat(SELECTEDMEASURE(), TRUE)
+
+	/// Customers with a bonus booked within what their own sales accumulated (Bonus Difference zero or above). Count.
+	measure 'Bonus Within Accumulated Customers Count' = [Bonus Customers Count] - [Bonus Spent Above Accumulated Customers Count]
+		formatString: #,0
+		displayFolder: Trade Marketing\Annual Bonus
+		lineageTag: 0a0fbaa8-e182-4289-a912-8e02fc05c08c
+
+	/// Average price per unit sold after the regular discount and before the extra discount, without VAT, weighted by quantity: the price the marketing coefficient starts from. Value per unit.
+	measure 'Gross Price ex VAT' =
+			CALCULATE(
+			    DIVIDE(
+			        SUMX( FactSalesLine, FactSalesLine[Quantity] * FactSalesLine[GrossPrice] * FactSalesLine[ExVatFactor] ),
+			        SUM( FactSalesLine[Quantity] )
+			    ),
+			    DimDocumentType[IsSalesOut] = TRUE
+			)
+		formatString: #,0.00
+		displayFolder: Calculation Roots\Prices
+		lineageTag: 8028b6bc-84bc-44d8-9a48-b72b087146e2
+
+	/// Service and rent invoices to suppliers, without VAT, booked to the supplier's brand (FactServiceInvoice): added to the marketing budget (Budget Accumulated). Value.
+	measure 'Service Invoices' = SUM( FactServiceInvoice[Value] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 8cb7dfc1-3d13-496d-a125-abef87c8a52b
+
+	/// Service invoices to suppliers ([Service Invoices]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Service Invoices Actual Year' = YearToDay( [Service Invoices] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 724972ef-1e3d-494e-8aa7-0e755cfff9ca
+
+	/// Campaigns agreed with customers in the trade-terms register (fixed value): each amount as agreed, dated at the campaign's start. Without VAT. Value.
+	measure Campaigns =
+			CALCULATE(
+			    SUM( FactTradeTerm[Spent] ),
+			    FactTradeTerm[TermGroup] = "Campaign",
+			    FactTradeTerm[IsPercentage] = FALSE
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 732a9b27-8f8e-478b-871a-eb3561261de3
+
+	/// Promotions agreed with customers in the trade-terms register (fixed value): each amount as agreed, dated at its start. Without VAT. Value.
+	measure Promotions =
+			CALCULATE(
+			    SUM( FactTradeTerm[Spent] ),
+			    FactTradeTerm[TermGroup] = "Promotion",
+			    FactTradeTerm[IsPercentage] = FALSE
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 0793ed74-2139-47da-b482-69fff472c1bb
+
+	/// Seasonal fixed positions: the fixed-value positions (and marketing terms) that do not run a whole calendar year, value x units in each month they have run up to today, each month its own (FactTradeTermMonth). Without VAT. Value.
+	measure 'Seasonal Fixed Positions' =
+			CALCULATE(
+			    SUM( FactTradeTermMonth[Spent] ),
+			    FactTradeTermMonth[TermGroup] = "Position",
+			    FactTradeTermMonth[IsPercentage] = FALSE,
+			    FactTradeTermMonth[IsFullYear] = FALSE,
+			    -- the months run up to today: the months still to come are a commitment, not spent
+			    KEEPFILTERS( DimDate[Date] <= TODAY() )
+			)
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 75079c42-0298-4c31-a01a-fec49b640789
+
+	/// The trade terms the business counts as trade spend: campaigns, promotions and seasonal fixed positions. Without VAT. Value.
+	measure 'Trade Terms Spent' = [Campaigns] + [Promotions] + [Seasonal Fixed Positions]
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 2ae78e78-827a-4470-ac79-98d8eb62180b
+
+	/// Trade terms spent ([Trade Terms Spent]), this year to date: the date slicers' window within this year, cut at today (1 January to today when no slicer is set). Value.
+	measure 'Trade Terms Spent Actual Year' = YearToDay( [Trade Terms Spent] )
+		formatString: #,0
+		displayFolder: Trade Marketing\Trade Spend
+		lineageTag: 4df4006a-59af-4d02-991e-694923443d2b
+
+	/// Positions paid at a fixed value per month. Count.
+	measure 'Fixed Positions' = CALCULATE( [Positions Count], KEEPFILTERS( FactTradeTerm[IsPercentage] = FALSE ) )
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: f7b97987-82a7-4b93-88e4-3a18638a102a
+
+	/// Positions paid as a percentage of the outlet's sales of the brand. Count.
+	measure 'Positions Percentage Count' = CALCULATE( [Positions Count], KEEPFILTERS( FactTradeTerm[IsPercentage] = TRUE ) )
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 1f778fc0-04c9-49bc-8f96-1308f2379c6a
+
+	/// Customers with at least one position this year to date. Count.
+	measure 'Position Customers Count' = COUNTROWS( TermCustomers( "Position" ) )
+		formatString: #,0
+		displayFolder: Trade Marketing\Secondary Position
+		lineageTag: 5e63a750-7ac0-4e1b-9869-19008b50fd38
+
+	/// 1 where the item in context has sales in the selected dates, blank otherwise. The hidden filter of the product and organisation slicers, so they list only items with data. A flag.
+	measure 'Slicer Has Data' = IF( NOT ISBLANK( [Sales Net Price] ), 1 )
+		formatString: 0
+		isHidden
+		displayFolder: Formatting\Slicer Filter
+		lineageTag: 9f235751-ab68-4347-8d54-c16fe6421a5b
+
+	partition Measure = m
+		mode: import
+		queryGroup: Model
+		source =
+				let
+				    // Query group: Model
+				    // Measure-table scaffold: an empty table that hosts measures only.
+				    Source = #table({}, {})
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

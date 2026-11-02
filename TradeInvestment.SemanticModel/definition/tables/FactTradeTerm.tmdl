@@ -1,0 +1,186 @@
+/// Trade terms agreed with customers: one row per term (outlet, brand, term type, billing method and period), with what it has cost up to today. Terms that start in the current or prior year.
+table FactTradeTerm
+	lineageTag: 89060958-bc57-4052-ad7a-f42b7ea55918
+
+	/// Outlet the term is agreed for. Joins to DimOutlet.
+	column OutletId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: abf9c7df-abf2-482b-a8d9-8aa98b12fc2f
+		summarizeBy: none
+		sourceColumn: OutletId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Customer that owns the outlet. Not related: the term reaches DimPartner through DimOutlet. TermCustomers reads it to list the customers with a term.
+	column PartnerId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: cb38dbb0-b7a6-44fe-a443-0ad6d8debe4f
+		summarizeBy: none
+		sourceColumn: PartnerId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Brand the term is agreed on. Joins to DimBrand. A term carries no product.
+	column BrandId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 27da2aec-677f-4f1c-83d7-2795c4894867
+		summarizeBy: none
+		sourceColumn: BrandId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Term type as the source names it: a placement type, a bonus, a campaign, a promotion.
+	column TermType
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: a3705eff-94a7-4741-844d-10a999172c46
+		summarizeBy: none
+		sourceColumn: TermType
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Group of the term type, from the source: Bonus, Position, Campaign or Promotion. Every measure filters on it.
+	column TermGroup
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: 61b02534-e4d3-4141-90ae-94fe3be8d6d5
+		summarizeBy: none
+		sourceColumn: TermGroup
+
+		annotation SummarizationSetBy = Automatic
+
+	/// TRUE for a term billed as a percentage of the outlet's sales of the brand; FALSE for a fixed value per unit and month.
+	column IsPercentage
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		isAvailableInMdx: false
+		lineageTag: 4da198c9-d906-4780-a88a-dc03547aa667
+		summarizeBy: none
+		sourceColumn: IsPercentage
+
+		annotation SummarizationSetBy = Automatic
+
+	/// First day of the term. Joins to DimDate: a count of terms reads the term on its start.
+	column StartDate
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		isAvailableInMdx: false
+		lineageTag: 3787e585-4a65-48f3-a03f-9da74dbd6e02
+		summarizeBy: none
+		sourceColumn: StartDate
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Last day of the term.
+	column EndDate
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		isAvailableInMdx: false
+		lineageTag: e4594723-898d-4fbe-8e91-3bde20705e2d
+		summarizeBy: none
+		sourceColumn: EndDate
+
+		annotation SummarizationSetBy = Automatic
+
+	/// What the term has cost up to today, without VAT: a percentage term's rate on the outlet's sales of the brand on its days so far; a campaign or promotion its amount; a fixed term's value x units x the months it has run.
+	column Spent
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 89de2ae3-0fe9-4181-9dd2-5e7b9bad7e1e
+		summarizeBy: none
+		sourceColumn: Spent
+
+		annotation SummarizationSetBy = Automatic
+
+	/// A fixed term's value for one month, value x units; 0 on a percentage term.
+	column MonthlyValue
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 8a26c362-d0d6-49f1-b6fc-0fe22b585bfc
+		summarizeBy: none
+		sourceColumn: MonthlyValue
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FactTradeTerm = m
+		mode: import
+		queryGroup: Fact
+		source = ```
+				let
+				    // Trade terms per outlet and brand, one row per term with what it has cost up to today.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                WITH term AS (" & TradeTerms & "
+				                ),
+				                sales AS (
+				                    -- the base of a percentage term: the outlet's sales of the term's brand without VAT on the days the
+				                    -- term has run up to today, by the sales rule (sales-out documents, goods, the lines the rule keeps)
+				                    SELECT
+				                        t.TermId,
+				                        SUM(CAST(l.Quantity AS FLOAT) * CAST(l.NetPrice AS FLOAT) / (1.0 + ISNULL(CAST(l.VatRate AS FLOAT), 0) / 100.0)) AS Base
+				                    FROM term t
+				                    INNER JOIN ti.SalesLine l
+				                        ON l.OutletId = t.OutletId
+				                       AND l.DocumentDate >= t.StartDate
+				                       AND l.DocumentDate < DATEADD(DAY, 1, t.EndDate)
+				                    INNER JOIN ti.Product p
+				                        ON p.ProductId = l.ProductId
+				                       AND p.BrandId = t.BrandId
+				                    INNER JOIN ti.DocumentType d
+				                        ON d.DocumentTypeId = l.DocumentTypeId
+				                    WHERE t.IsPercentage = 1
+				                      AND d.IsSalesOut = 1
+				                      AND p.IsGoods = 1
+				                      AND l.CountsAsSale = 1
+				                    GROUP BY t.TermId
+				                )
+				                SELECT
+				                    t.OutletId,
+				                    t.PartnerId,
+				                    t.BrandId,
+				                    t.TermType,
+				                    t.TermGroup,
+				                    CAST(t.IsPercentage AS BIT) AS IsPercentage,
+				                    t.StartDate,
+				                    t.EndDate,
+				                    CASE
+				                        -- percentage: the rate on the sales of the term's days up to today
+				                        WHEN t.IsPercentage = 1 THEN t.ValueExVat / 100.0 * ISNULL(s.Base, 0)
+				                        -- campaign and promotion: the amount agreed
+				                        WHEN t.TermGroup IN (N'Campaign', N'Promotion') THEN t.ValueExVat
+				                        -- fixed bonus or position: value x units x the months run up to today
+				                        ELSE t.ValueExVat * t.Units * t.MonthsToDate
+				                    END AS Spent,
+				                    CASE WHEN t.IsPercentage = 0 THEN t.ValueExVat * t.Units ELSE 0 END AS MonthlyValue
+				                FROM term t
+				                LEFT JOIN sales s
+				                    ON s.TermId = t.TermId
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Typed = Table.TransformColumnTypes(Source, {{"StartDate", type date}, {"EndDate", type date}, {"IsPercentage", type logical}})
+				in
+				    Typed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

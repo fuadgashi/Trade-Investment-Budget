@@ -1,0 +1,173 @@
+/// Sales document lines: one row per line the sales rule keeps, goods only. Carries the prices the price calculation and the trade-investment rates are worked out on. Window: 1 January of the prior year onwards.
+table FactSalesLine
+	lineageTag: 9ec86610-3bc9-4648-b9db-df3d620519fa
+
+	/// Document type code. Joins to DimDocumentType, which carries the sales-out flag.
+	column DocumentTypeId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: d2b48ea5-427b-4f7e-9e9b-698677a6da0b
+		summarizeBy: none
+		sourceColumn: DocumentTypeId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Organisational unit that issued the document. Joins to DimOrgUnit.
+	column OrgUnitId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: b59a5471-ccb8-43be-a89d-f8fab5e446f9
+		summarizeBy: none
+		sourceColumn: OrgUnitId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Outlet the goods were sold to. Joins to DimOutlet, and through it to the customer in DimPartner.
+	column OutletId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: eb46a3b3-9053-456f-bba3-4c5311e781d8
+		summarizeBy: none
+		sourceColumn: OutletId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Document date. Joins to DimDate and drives all time intelligence.
+	column Date
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		isAvailableInMdx: false
+		lineageTag: a7b7775a-6d29-4243-b980-8acea0d1d16a
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Product code. Joins to DimProduct.
+	column ProductId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 47725eab-4420-4ea7-8ac2-2529db99185c
+		summarizeBy: none
+		sourceColumn: ProductId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Quantity on the line, in the product's base unit.
+	column Quantity
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: fd148557-8803-4bf3-8c98-32ad69128b20
+		summarizeBy: none
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	/// List price per unit, with VAT, before any discount.
+	column ListPrice
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: e472998c-6eaa-4fa3-a1d7-92c4cf12894d
+		summarizeBy: none
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Price per unit with VAT after the regular discount, before the extra discount.
+	column GrossPrice
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 9a0d649e-03d3-47f2-9ce0-142c2fa46ad0
+		summarizeBy: none
+		sourceColumn: GrossPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Net price per unit with VAT: after the regular and the extra discount. What the customer pays. Sales Net Price multiplies quantity by it.
+	column NetPrice
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 65e6a134-6426-40bb-807d-e6e0d04e54b2
+		summarizeBy: none
+		sourceColumn: NetPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Average cost per unit, without VAT, as the source posts it to the cost of sales.
+	column UnitCost
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 5da7e05d-7469-4fca-9efe-d295fff92d30
+		summarizeBy: none
+		sourceColumn: UnitCost
+
+		annotation SummarizationSetBy = Automatic
+
+	/// 1 / (1 + VAT rate / 100): multiplies a price with VAT into the same price without VAT.
+	column ExVatFactor
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: ad1abd18-8032-483b-8de5-5c2a2280fe34
+		summarizeBy: none
+		sourceColumn: ExVatFactor
+
+		annotation SummarizationSetBy = Automatic
+	partition FactSalesLine = m
+		mode: import
+		queryGroup: Fact
+		source = ```
+				let
+				    // Sales document lines from 1 January of the prior year, goods only, the lines the sales rule keeps.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                SELECT
+				                    l.DocumentTypeId,
+				                    l.OrgUnitId,
+				                    l.OutletId,
+				                    CAST(l.DocumentDate AS DATE) AS [Date],
+				                    l.ProductId,
+				                    CAST(l.Quantity AS FLOAT) AS Quantity,
+				                    CAST(l.ListPrice AS FLOAT) AS ListPrice,
+				                    CAST(l.GrossPrice AS FLOAT) AS GrossPrice,
+				                    CAST(l.NetPrice AS FLOAT) AS NetPrice,
+				                    CAST(l.UnitCost AS FLOAT) AS UnitCost,
+				                    1.0 / (1.0 + ISNULL(CAST(l.VatRate AS FLOAT), 0) / 100.0) AS ExVatFactor
+				                FROM ti.SalesLine l
+				                -- goods only: service and fixed-asset lines never reach a sales, cost or budget figure
+				                INNER JOIN ti.Product p
+				                    ON p.ProductId = l.ProductId
+				                WHERE l.DocumentDate >= DATEFROMPARTS(YEAR(GETDATE()) - 1, 1, 1)
+				                  AND p.IsGoods = 1
+				                  -- the source flags the lines the sales rule keeps (the customer types counted, an outlet present)
+				                  AND l.CountsAsSale = 1
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Typed = Table.TransformColumnTypes(Source, {{"Date", type date}})
+				in
+				    Typed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

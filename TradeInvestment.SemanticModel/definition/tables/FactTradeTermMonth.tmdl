@@ -1,0 +1,167 @@
+/// The bonus and position cost by month: for every bonus or position term and every month it runs, that month's cost. The cost falls in the month it arises.
+table FactTradeTermMonth
+	lineageTag: 817306c7-8469-4394-a35e-1ebb7d391ef0
+
+	/// Outlet the term is agreed for. Joins to DimOutlet.
+	column OutletId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 96399b80-57fa-4f06-b776-7428a7db5273
+		summarizeBy: none
+		sourceColumn: OutletId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Brand the term is agreed on. Joins to DimBrand.
+	column BrandId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 5daa11f9-aa46-44a9-8811-508f5f26bae5
+		summarizeBy: none
+		sourceColumn: BrandId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Bonus or Position.
+	column TermGroup
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: 3708a837-33e4-48d9-9011-8534acd610e1
+		summarizeBy: none
+		sourceColumn: TermGroup
+
+		annotation SummarizationSetBy = Automatic
+
+	/// TRUE for a term billed as a percentage of sales; FALSE for a fixed value.
+	column IsPercentage
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		isAvailableInMdx: false
+		lineageTag: 1b826008-65e6-45d1-906a-901ca4bbe8d2
+		summarizeBy: none
+		sourceColumn: IsPercentage
+
+		annotation SummarizationSetBy = Automatic
+
+	/// TRUE for a term that runs one whole calendar year.
+	column IsFullYear
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		isAvailableInMdx: false
+		lineageTag: 23d5d8eb-5e94-4907-a043-c3e24238d9c1
+		summarizeBy: none
+		sourceColumn: IsFullYear
+
+		annotation SummarizationSetBy = Automatic
+
+	/// First day of the month the cost falls in. Joins to DimDate.
+	column Month
+		dataType: dateTime
+		formatString: mmm yyyy
+		isAvailableInMdx: false
+		lineageTag: 7c40be27-540c-41fd-8f56-6ba9ae4f02c5
+		summarizeBy: none
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	/// The month's cost without VAT: a percentage term's rate on the outlet's sales of the brand in that month; a fixed term's value x units in every month it runs, months still to come included.
+	column Spent
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 98f0c7ba-9295-49bb-8373-d8c08ee5779d
+		summarizeBy: none
+		sourceColumn: Spent
+
+		annotation SummarizationSetBy = Automatic
+	partition FactTradeTermMonth = m
+		mode: import
+		queryGroup: Fact
+		source = ```
+				let
+				    // The bonus and position cost by month, from the trade terms.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                WITH term AS (" & TradeTerms & "
+				                ),
+				                percentage AS (
+				                    -- a percentage term's base per month: the outlet's sales of the term's brand without VAT in each month
+				                    -- of the term up to today, by the sales rule
+				                    SELECT
+				                        t.TermId,
+				                        DATEFROMPARTS(YEAR(l.DocumentDate), MONTH(l.DocumentDate), 1) AS [Month],
+				                        SUM(CAST(l.Quantity AS FLOAT) * CAST(l.NetPrice AS FLOAT) / (1.0 + ISNULL(CAST(l.VatRate AS FLOAT), 0) / 100.0)) AS Base
+				                    FROM term t
+				                    INNER JOIN ti.SalesLine l
+				                        ON l.OutletId = t.OutletId
+				                       AND l.DocumentDate >= t.StartDate
+				                       AND l.DocumentDate < DATEADD(DAY, 1, t.EndDate)
+				                    INNER JOIN ti.Product p
+				                        ON p.ProductId = l.ProductId
+				                       AND p.BrandId = t.BrandId
+				                    INNER JOIN ti.DocumentType d
+				                        ON d.DocumentTypeId = l.DocumentTypeId
+				                    WHERE t.IsPercentage = 1
+				                      AND d.IsSalesOut = 1
+				                      AND p.IsGoods = 1
+				                      AND l.CountsAsSale = 1
+				                      AND t.TermGroup IN (N'Bonus', N'Position')
+				                    GROUP BY t.TermId, DATEFROMPARTS(YEAR(l.DocumentDate), MONTH(l.DocumentDate), 1)
+				                ),
+				                numbers AS (
+				                    -- 0 to 49: the months of a fixed term, counted from its first
+				                    SELECT a.d * 10 + b.d AS n
+				                    FROM (VALUES (0), (1), (2), (3), (4)) a (d)
+				                    CROSS JOIN (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9)) b (d)
+				                ),
+				                monthly AS (
+				                    SELECT t.TermId, p.[Month], t.ValueExVat / 100.0 * p.Base AS Spent
+				                    FROM term t
+				                    INNER JOIN percentage p
+				                        ON p.TermId = t.TermId
+				                    UNION ALL
+				                    -- a fixed term: value x units in every month it runs, the months still to come included (the measures
+				                    -- cut at today; the year-end commitment takes them)
+				                    SELECT t.TermId, DATEADD(MONTH, n.n, DATEFROMPARTS(YEAR(t.StartDate), MONTH(t.StartDate), 1)), t.ValueExVat * t.Units
+				                    FROM term t
+				                    INNER JOIN numbers n
+				                        ON n.n < t.MonthsTotal
+				                    WHERE t.IsPercentage = 0
+				                      AND t.TermGroup IN (N'Bonus', N'Position')
+				                )
+				                SELECT
+				                    t.OutletId,
+				                    t.BrandId,
+				                    t.TermGroup,
+				                    CAST(t.IsPercentage AS BIT) AS IsPercentage,
+				                    CAST(t.IsFullYear AS BIT) AS IsFullYear,
+				                    m.[Month],
+				                    SUM(m.Spent) AS Spent
+				                FROM monthly m
+				                INNER JOIN term t
+				                    ON t.TermId = m.TermId
+				                GROUP BY t.OutletId, t.BrandId, t.TermGroup, t.IsPercentage, t.IsFullYear, m.[Month]
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Typed = Table.TransformColumnTypes(Source, {{"Month", type date}, {"IsPercentage", type logical}, {"IsFullYear", type logical}})
+				in
+				    Typed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

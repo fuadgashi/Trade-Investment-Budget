@@ -1,0 +1,21 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "5a6da0f0ba6a4ca3df67",
+  "displayName": "Budget",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "visibility": "HiddenInViewMode",
+  "visualInteractions": [
+    {
+      "source": "7877c61875fcfaa0a2e8",
+      "target": "dae33c1e61f2633647c0",
+      "type": "NoFilter"
+    },
+    {
+      "source": "72a75ce7ca9f2f0d0fe4",
+      "target": "dae33c1e61f2633647c0",
+      "type": "NoFilter"
+    }
+  ]
+}

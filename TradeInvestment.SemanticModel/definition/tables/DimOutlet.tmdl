@@ -1,0 +1,128 @@
+/// Outlets: the customers' points of sale, with the channel, region and city the Channel / Region slicer reads. Sales and trade terms carry an outlet; credit notes and service invoices do not.
+table DimOutlet
+	lineageTag: 7b6e162d-b1c4-4a9e-a68c-283fabeb2512
+
+	/// Outlet code.
+	column OutletId
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: f5cf836f-9f6c-4e1a-9c61-1b78a2368a38
+		summarizeBy: none
+		sourceColumn: OutletId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Outlet name. Sorted by OutletSortOrder.
+	column OutletName
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: 4fee7142-340f-4f6b-804f-4f20f6761194
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: OutletName
+		sortByColumn: OutletSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Display order of OutletName, from the source: one position per outlet name.
+	column OutletSortOrder
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 0bc70a6c-c08f-4137-98df-cb6ade5267f6
+		summarizeBy: none
+		sourceColumn: OutletSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	/// The customer and the outlet on one line, for a table that lists outlets of several customers.
+	column OutletLabel
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: 8452ef31-64b0-42ba-9cd5-e603e6657949
+		summarizeBy: none
+		sourceColumn: OutletLabel
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Customer that owns the outlet. Joins to DimPartner.
+	column PartnerId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 80410c37-82dd-49b0-ac57-bf433c39e137
+		summarizeBy: none
+		sourceColumn: PartnerId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Sales channel of the outlet.
+	column Channel
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: e93bb283-dcce-426e-a5cb-d7cc3e48520f
+		summarizeBy: none
+		sourceColumn: Channel
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Sales region of the outlet.
+	column Region
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: a64e915e-932a-4102-bc16-47af87123503
+		summarizeBy: none
+		sourceColumn: Region
+
+		annotation SummarizationSetBy = Automatic
+
+	/// City of the outlet.
+	column City
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: 422b54c6-d0c5-440a-a31f-c9027e1c9dc1
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+	partition DimOutlet = m
+		mode: import
+		queryGroup: Dimension
+		source = ```
+				let
+				    // Outlets with their customer, channel, region and city.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                SELECT
+				                    o.OutletId,
+				                    o.OutletName,
+				                    o.SortOrder AS OutletSortOrder,
+				                    CONCAT(p.PartnerName, N' - ', o.OutletName) AS OutletLabel,
+				                    o.PartnerId,
+				                    o.Channel,
+				                    o.Region,
+				                    o.City
+				                FROM ti.Outlet o
+				                INNER JOIN ti.Partner p
+				                    ON p.PartnerId = o.PartnerId
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Keyed = Table.AddKey(Source, {"OutletId"}, true)
+				in
+				    Keyed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

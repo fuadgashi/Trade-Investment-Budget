@@ -1,0 +1,91 @@
+relationship 09435b61-5106-4aac-b662-8dff53a71ff4
+	fromColumn: FactSalesLine.Date
+	toColumn: DimDate.Date
+
+relationship 873adfda-0276-4aaf-bc87-77c06d2b0674
+	fromColumn: FactSalesLine.DocumentTypeId
+	toColumn: DimDocumentType.DocumentTypeId
+
+relationship ee609b73-81ce-45bf-a49c-17ce3614ac5d
+	fromColumn: FactSalesLine.OrgUnitId
+	toColumn: DimOrgUnit.OrgUnitId
+
+relationship 0e06111d-2fc9-4cec-807d-56adaffc6dc6
+	fromColumn: FactSalesLine.OutletId
+	toColumn: DimOutlet.OutletId
+
+relationship 5d45746b-b511-46da-8c56-de9f831f211a
+	fromColumn: FactSalesLine.ProductId
+	toColumn: DimProduct.ProductId
+
+relationship 3fb92cd2-fcbe-49ec-911e-f0bc9a82eac5
+	fromColumn: FactPurchaseLine.Date
+	toColumn: DimDate.Date
+
+relationship ebb8b3db-61da-4f7c-9038-68591c7beb23
+	fromColumn: FactPurchaseLine.DocumentTypeId
+	toColumn: DimDocumentType.DocumentTypeId
+
+relationship 5f03f291-9aca-489c-92e4-43168d822289
+	fromColumn: FactPurchaseLine.OrgUnitId
+	toColumn: DimOrgUnit.OrgUnitId
+
+relationship bd1089a8-9f55-474a-b04a-8bbb2cca7bd3
+	fromColumn: FactPurchaseLine.ProductId
+	toColumn: DimProduct.ProductId
+
+relationship 9e204f13-f66e-4642-91f6-84b1dd7f1bdb
+	fromColumn: FactTradeTerm.OutletId
+	toColumn: DimOutlet.OutletId
+
+relationship 8f402a80-ee40-4f2c-b81d-bcf879049265
+	fromColumn: FactTradeTerm.BrandId
+	toColumn: DimBrand.BrandId
+
+relationship 08c54dc9-4426-4896-b3f2-56bea9a5cb56
+	fromColumn: FactTradeTerm.StartDate
+	toColumn: DimDate.Date
+
+relationship 4f45368c-a046-4090-a4bc-008833b60fdd
+	fromColumn: FactTradeTermMonth.OutletId
+	toColumn: DimOutlet.OutletId
+
+relationship 5fa4961f-d81a-40cc-87a8-682d81d2652d
+	fromColumn: FactTradeTermMonth.BrandId
+	toColumn: DimBrand.BrandId
+
+relationship 178527da-683d-4b91-adf0-89b2af74858b
+	fromColumn: FactTradeTermMonth.Month
+	toColumn: DimDate.Date
+
+relationship 0b5997c8-8441-4305-984c-05b16b05d755
+	fromColumn: FactCreditNote.Date
+	toColumn: DimDate.Date
+
+relationship 6ac49d5d-872c-434c-8ad7-d46a64259a26
+	fromColumn: FactCreditNote.PartnerId
+	toColumn: DimPartner.PartnerId
+
+relationship a059b342-731f-4b31-8ed6-a06cddf12f2c
+	fromColumn: FactCreditNote.BrandId
+	toColumn: DimBrand.BrandId
+
+relationship 0ebd0c5e-d623-4b76-b14d-c6c3b909221c
+	fromColumn: FactServiceInvoice.Date
+	toColumn: DimDate.Date
+
+relationship 131799ca-8517-4504-8b94-f6d439f984c0
+	fromColumn: FactServiceInvoice.PartnerId
+	toColumn: DimPartner.PartnerId
+
+relationship 17af48d0-d860-4711-9a97-14d5ba42bb35
+	fromColumn: FactServiceInvoice.BrandId
+	toColumn: DimBrand.BrandId
+
+relationship c4c6e8ca-8712-41b8-9ecf-1dfd560770a3
+	fromColumn: DimProduct.BrandId
+	toColumn: DimBrand.BrandId
+
+relationship b7386c16-9519-4bd6-ac9f-6bedc3905d44
+	fromColumn: DimOutlet.PartnerId
+	toColumn: DimPartner.PartnerId

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "80d22d62cfb615798edf",
+  "displayName": "Calculation",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "visibility": "HiddenInViewMode",
+  "visualInteractions": [
+    {
+      "source": "d9bcf1ffc0a93a885d2e",
+      "target": "e34ee7e5bf823a26c170",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d9bcf1ffc0a93a885d2e",
+      "target": "166f8f817b0eed304950",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d9bcf1ffc0a93a885d2e",
+      "target": "d8c6be3506603b22437b",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d9bcf1ffc0a93a885d2e",
+      "target": "6c0fdeab2c91312c061e",
+      "type": "NoFilter"
+    }
+  ]
+}

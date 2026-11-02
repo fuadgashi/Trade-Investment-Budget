@@ -1,0 +1,82 @@
+/// Service and rent invoices the company sends its suppliers, booked to the supplier's brand: money suppliers give back to the trade budget. Window: 1 January of the prior year onwards.
+table FactServiceInvoice
+	lineageTag: 4ca96dd2-0c79-460e-919a-23b733827d3a
+
+	/// Invoice date. Joins to DimDate.
+	column Date
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		isAvailableInMdx: false
+		lineageTag: 3238afb9-1b00-4cbd-8500-d0591c79a6f1
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Supplier invoiced. Joins to DimPartner.
+	column PartnerId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 6c256a93-eba7-4a9e-afab-712082905fd6
+		summarizeBy: none
+		sourceColumn: PartnerId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Brand the supplier's invoices are booked to, from the source. Joins to DimBrand; blank for a supplier with no brand.
+	column BrandId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 28b7f44d-875d-4805-a78f-ff647ac7e1b5
+		summarizeBy: none
+		sourceColumn: BrandId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Invoice value without VAT.
+	column Value
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 4799c855-313d-4f32-840c-d3e97be70ca8
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+	partition FactServiceInvoice = m
+		mode: import
+		queryGroup: Fact
+		source = ```
+				let
+				    // Service and rent invoices to suppliers, booked to the supplier's brand.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                SELECT
+				                    CAST(i.InvoiceDate AS DATE) AS [Date],
+				                    i.PartnerId,
+				                    -- the source books each supplier's invoices to one brand
+				                    i.BrandId,
+				                    CAST(i.ValueExVat AS FLOAT) AS Value
+				                FROM ti.ServiceInvoice i
+				                WHERE i.InvoiceDate >= DATEFROMPARTS(YEAR(GETDATE()) - 1, 1, 1)
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Typed = Table.TransformColumnTypes(Source, {{"Date", type date}})
+				in
+				    Typed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

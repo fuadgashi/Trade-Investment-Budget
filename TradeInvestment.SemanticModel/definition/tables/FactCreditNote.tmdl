@@ -1,0 +1,93 @@
+/// Credit notes, split by brand: issued to customers (trade spend) and received from suppliers (budget given back). Window: 1 January of the prior year onwards.
+table FactCreditNote
+	lineageTag: ed03a919-3afe-4b06-836b-cf0bdc140ab0
+
+	/// Credit note date. Joins to DimDate.
+	column Date
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		isAvailableInMdx: false
+		lineageTag: c44fe4f4-b71c-429b-9fc0-19d5e054a47c
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Customer or supplier on the credit note. Joins to DimPartner.
+	column PartnerId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: dbd31821-3c08-4c6c-be22-c94424afc21c
+		summarizeBy: none
+		sourceColumn: PartnerId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Brand the credit note is booked on. Joins to DimBrand. A credit note carries no product and no outlet.
+	column BrandId
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: f1c5b95b-f106-41c6-8184-762c205cace7
+		summarizeBy: none
+		sourceColumn: BrandId
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Issued (to a customer) or Received (from a supplier), from the source.
+	column Direction
+		dataType: string
+		isAvailableInMdx: false
+		lineageTag: ffa8edaa-b0a9-47a0-9ab0-a3ec4b247864
+		summarizeBy: none
+		sourceColumn: Direction
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Amount without VAT, positive.
+	column Value
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 0c629509-000b-45fe-8990-d6fa0dd6569f
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+	partition FactCreditNote = m
+		mode: import
+		queryGroup: Fact
+		source = ```
+				let
+				    // Credit notes issued and received, split by brand.
+				    Source =
+				        Sql.Database(
+				            pServer,
+				            pDatabase,
+				            [
+				                Query = "
+				                SELECT
+				                    CAST(c.DocumentDate AS DATE) AS [Date],
+				                    c.PartnerId,
+				                    c.BrandId,
+				                    -- the source names the direction: Issued or Received
+				                    c.Direction,
+				                    CAST(c.ValueExVat AS FLOAT) AS Value
+				                FROM ti.CreditNote c
+				                WHERE c.DocumentDate >= DATEFROMPARTS(YEAR(GETDATE()) - 1, 1, 1)
+				                ",
+				                CommandTimeout = #duration(0, 1, 0, 0)
+				            ]
+				        ),
+				    Typed = Table.TransformColumnTypes(Source, {{"Date", type date}})
+				in
+				    Typed
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

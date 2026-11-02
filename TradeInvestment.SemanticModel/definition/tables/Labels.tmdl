@@ -1,0 +1,267 @@
+/// Every user-facing string of the report: one row per owner, label type and culture. Plain data; the label measures read it.
+table Labels
+	lineageTag: 9f7b0fcb-ddf7-468f-b948-a5a954a2f9f6
+
+	/// What the label belongs to - a page, a section, a visual or a slicer.
+	column OwnerType
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: a09bda47-b5bd-4af1-aa9b-f3f9bcacfe4a
+		summarizeBy: none
+		sourceColumn: OwnerType
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Sequential number within the owner type. Never shared across types.
+	column OwnerNumber
+		dataType: int64
+		isHidden
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: 7baaf915-8f4c-4947-ac16-637a51cc5a7e
+		summarizeBy: none
+		sourceColumn: OwnerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Human-readable name of the thing the label belongs to.
+	column OwnerName
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 3a390d67-2146-4523-9f7a-b04979b6a1a9
+		summarizeBy: none
+		sourceColumn: OwnerName
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Which slot on the owner this text fills, such as a title or a subtitle.
+	column LabelType
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 1e99fc90-6b19-4164-bebd-00b277347a48
+		summarizeBy: none
+		sourceColumn: LabelType
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Language this row's text is written in.
+	column Culture
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: cd11650c-9c75-4959-9709-3f9628864946
+		summarizeBy: none
+		sourceColumn: Culture
+
+		annotation SummarizationSetBy = Automatic
+
+	/// The text shown to the user. All report text lives here, never in DAX.
+	column Label
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: 92c2a817-98db-4eb3-9387-b959414a2c0b
+		summarizeBy: none
+		sourceColumn: Label
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Labels = m
+		mode: import
+		queryGroup: Model
+		source =
+				let
+				    // Every user-facing string of the report, one row per OwnerType + OwnerNumber + LabelType + Culture.
+				    // Text lives here, never in DAX: the measures in LabelMeasures are lookups against it.
+				    Source = #table(
+				        type table [OwnerType = text, OwnerNumber = Int64.Type, OwnerName = text, Culture = text, LabelType = text, Label = text],
+				        {
+				        {"Page", 1, "PageNav1", "en-US", "Navigator Title", "Price"},
+				        {"Page", 1, "Page 1", "en-US", "Subtitle", "Price key components"},
+				        {"Page", 1, "Page 1", "en-US", "Title", "Price Calculation"},
+				        {"Page", 2, "PageNav2", "en-US", "Navigator Title", "Bonus"},
+				        {"Page", 2, "Page 2", "en-US", "Subtitle", "Accumulated, spent and difference"},
+				        {"Page", 2, "Page 2", "en-US", "Title", "Annual Bonus"},
+				        {"Page", 3, "PageNav3", "en-US", "Navigator Title", "Positions"},
+				        {"Page", 3, "Page 3", "en-US", "Subtitle", "Accumulated {PositionRate}, spent and positions"},
+				        {"Page", 3, "Page 3", "en-US", "Title", "Secondary Positions"},
+				        {"Page", 4, "PageNav4", "en-US", "Navigator Title", "Budget"},
+				        {"Page", 4, "Page 4", "en-US", "Subtitle", "Accumulated and spent"},
+				        {"Page", 4, "Page 4", "en-US", "Title", "Marketing Budget"},
+				        {"Page", 5, "PageNav5", "en-US", "Navigator Title", "Total"},
+				        {"Page", 5, "Page 5", "en-US", "Subtitle", "Accumulated against spent"},
+				        {"Page", 5, "Page 5", "en-US", "Title", "Total Trade Investment"},
+				        {"Slicer", 6, "Channel/Region", "en-US", "SlicerTitle", "Channel / Region"},
+				        {"Slicer", 7, "Customer/Outlet", "en-US", "SlicerTitle", "Customer / Outlet"},
+				        {"Slicer", 8, "Date", "en-US", "SlicerTitle", "Date Range"},
+				        {"Slicer", 9, "Division/Product", "en-US", "SlicerTitle", "Division / Product"},
+				        {"Slicer", 10, "Month", "en-US", "SlicerTitle", "Month"},
+				        {"Slicer", 11, "Unit/Warehouse", "en-US", "SlicerTitle", "Unit / Warehouse"},
+				        {"Visual", 12, "Accumulated", "en-US", "MeasureLabel", "Accumulated"},
+				        {"Visual", 13, "Accumulated and Spent", "en-US", "MeasureLabel", "Accumulated and spent"},
+				        {"Visual", 14, "Alt Bonus Accumulated", "en-US", "VisualSubtitle", "Card: the annual bonus the price has set aside so far in the Current Year, split into customers with and without a bonus term, with the projection to year end."},
+				        {"Visual", 15, "Alt Bonus Customer", "en-US", "VisualSubtitle", "Table of customers with a bonus term: sales, spent rate, bonus spent, accumulated and difference."},
+				        {"Visual", 16, "Alt Bonus Customers", "en-US", "VisualSubtitle", "Card: the customers with a bonus term, split into spent above and within what their sales accumulated, with the spent rate against the rate in the price."},
+				        {"Visual", 17, "Alt Bonus Division", "en-US", "VisualSubtitle", "Bar chart: bonus accumulated and spent by division."},
+				        {"Visual", 18, "Alt Bonus Month", "en-US", "VisualSubtitle", "Column chart: bonus accumulated and spent by month of the Current Year."},
+				        {"Visual", 19, "Alt Bonus Not Given", "en-US", "VisualSubtitle", "Table of customers without a bonus term: their sales and the bonus accumulated on them."},
+				        {"Visual", 20, "Alt Bonus Risks", "en-US", "VisualSubtitle", "Card: customers spent above their accumulation and by how much, the spent rate, and the bonus accumulated on customers without a bonus term."},
+				        {"Visual", 21, "Alt Bonus Spent", "en-US", "VisualSubtitle", "Card: the bonus spent so far in the Current Year."},
+				        {"Visual", 22, "Alt Bonus Spent Rate", "en-US", "VisualSubtitle", "Card: bonus spent as a share of bonus accumulated, with the spent rate against the rate in the price and the difference between them."},
+				        {"Visual", 23, "Alt Brand Tooltip", "en-US", "VisualSubtitle", "Table for the brand or product under the pointer: sales, margin, budget spent and accumulated, extra discount, and the price and volume effects."},
+				        {"Visual", 24, "Alt Budget Discount", "en-US", "VisualSubtitle", "Table by brand and product: sales, extra discount and the discount rate."},
+				        {"Visual", 25, "Alt Budget Marketing", "en-US", "VisualSubtitle", "Table by brand and product: sales and marketing accumulated."},
+				        {"Visual", 26, "Alt Budget Month", "en-US", "VisualSubtitle", "Table by month: marketing accumulated, credit notes received, budget accumulated, credit notes issued, extra discount, budget spent and difference."},
+				        {"Visual", 27, "Alt Budget Outlet", "en-US", "VisualSubtitle", "Table by outlet: marketing accumulated and extra discount."},
+				        {"Visual", 28, "Alt Calculation Cost Price", "en-US", "VisualSubtitle", "Line chart: cost price per unit by week, Current Year against Prior Year."},
+				        {"Visual", 29, "Alt Calculation Marketing Coefficient", "en-US", "VisualSubtitle", "Line chart: the marketing coefficient as a share of the price by week, Current Year against Prior Year."},
+				        {"Visual", 30, "Alt Calculation Price Build-Up", "en-US", "VisualSubtitle", "Table by product: packing, cost price, the distribution, bonus, position and marketing rates, mark-up, VAT rate and regular price."},
+				        {"Visual", 31, "Alt Calculation Regular Price", "en-US", "VisualSubtitle", "Line chart: regular selling price per unit by week, Current Year against Prior Year."},
+				        {"Visual", 32, "Alt Calculation Supplier Price", "en-US", "VisualSubtitle", "Line chart: supplier price per unit by week, Current Year against Prior Year."},
+				        {"Visual", 33, "Alt Position Accumulated", "en-US", "VisualSubtitle", "Card: the secondary-position money the price has set aside so far in the Current Year, split into customers with and without a position, with the projection to year end."},
+				        {"Visual", 34, "Alt Position Checks", "en-US", "VisualSubtitle", "Card: brands with position cost and no credit note, credit notes received, fixed positions without a value, the difference and the average monthly value."},
+				        {"Visual", 35, "Alt Position Customer", "en-US", "VisualSubtitle", "Table of customers with a position: fixed positions, sales, spent rate, position spent, positions without a value, accumulated and difference."},
+				        {"Visual", 36, "Alt Position Month", "en-US", "VisualSubtitle", "Column chart: position accumulated and spent by month of the Current Year."},
+				        {"Visual", 37, "Alt Position Register", "en-US", "VisualSubtitle", "Card: every position in the register once - fixed with a value, fixed without one, percentage of sales - and the customers with a position."},
+				        {"Visual", 38, "Alt Position Spent", "en-US", "VisualSubtitle", "Card: position cost so far in the Current Year against the commitment for the whole year."},
+				        {"Visual", 39, "Alt Position Spent Rate", "en-US", "VisualSubtitle", "Card: position spent as a share of position accumulated, with the spent rate on sales against the position rate."},
+				        {"Visual", 40, "Alt Position Type", "en-US", "VisualSubtitle", "Bar chart: fixed and percentage positions by position type."},
+				        {"Visual", 41, "Alt Position Without Credit Note", "en-US", "VisualSubtitle", "Table by brand: position spent, credit notes received and fixed positions without a value."},
+				        {"Visual", 42, "Alt Total Accumulated", "en-US", "VisualSubtitle", "Card: total accumulated - bonus, position, marketing, and what suppliers give back - as a share of sales."},
+				        {"Visual", 43, "Alt Total Checks", "en-US", "VisualSubtitle", "Card: the marketing budget the price leaves, customers above 10% of sales, position cost, and bonus spent as a share of accumulated."},
+				        {"Visual", 44, "Alt Total Composition", "en-US", "VisualSubtitle", "Table: every pot accumulated and spent, and the difference."},
+				        {"Visual", 45, "Alt Total Customer", "en-US", "VisualSubtitle", "Table by customer: sales, bonus spent, credit notes issued, discounts, trade terms, total spent and spent rate."},
+				        {"Visual", 46, "Alt Total Difference", "en-US", "VisualSubtitle", "Card: accumulated less spent, and how much of the spending it covers."},
+				        {"Visual", 47, "Alt Total Division", "en-US", "VisualSubtitle", "Bar chart: total accumulated and spent by division."},
+				        {"Visual", 48, "Alt Total Month", "en-US", "VisualSubtitle", "Column chart: total accumulated and spent by month of the Current Year."},
+				        {"Visual", 49, "Alt Total Spent", "en-US", "VisualSubtitle", "Card: total spent - bonus, credit notes issued, discounts, positions and the other trade terms - as a share of sales."},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "VisualTitle", "Bonus accumulated"},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "HTMLFromExpected", "to year end"},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "HTMLSoFar", "of net sales to date"},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "HTMLWithBonus", "With a bonus"},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "HTMLWithoutBonus", "Without a bonus"},
+				        {"Visual", 50, "Bonus Accumulated", "en-US", "HTMLYearEnd", "Projected total"},
+				        {"Visual", 51, "Bonus Customer", "en-US", "VisualSubtitle", "Bonus spent per customer against the {BonusRate} its sales accumulated"},
+				        {"Visual", 51, "Bonus Customer", "en-US", "VisualTitle", "Bonus by customer"},
+				        {"Visual", 52, "Bonus Customers", "en-US", "VisualTitle", "Customers with a bonus"},
+				        {"Visual", 52, "Bonus Customers", "en-US", "HTMLAbove", "Above accumulated"},
+				        {"Visual", 52, "Bonus Customers", "en-US", "HTMLBookedRate", "Spent on their sales"},
+				        {"Visual", 52, "Bonus Customers", "en-US", "HTMLCustomers", "customers with a bonus term"},
+				        {"Visual", 52, "Bonus Customers", "en-US", "HTMLWithin", "Within accumulated"},
+				        {"Visual", 53, "Bonus Division", "en-US", "VisualSubtitle", "Accumulated against spent"},
+				        {"Visual", 53, "Bonus Division", "en-US", "VisualTitle", "By division"},
+				        {"Visual", 54, "Bonus Month", "en-US", "VisualSubtitle", "Accumulated {BonusRate} of net sales against bonus spent"},
+				        {"Visual", 54, "Bonus Month", "en-US", "VisualTitle", "Bonus accumulated and spent by month"},
+				        {"Visual", 55, "Bonus Not Given", "en-US", "VisualSubtitle", "Customers whose sales accumulated bonus and who received none"},
+				        {"Visual", 55, "Bonus Not Given", "en-US", "VisualTitle", "Accumulated without a bonus"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "VisualSubtitle", "Where the bonus spent needs attention"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "VisualTitle", "Risks"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "HTMLBookedRate", "Bonus spent as a share of their sales"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "HTMLOverFunded", "customers spent above their"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "HTMLWithoutBonus", "Accumulated on customers without a bonus"},
+				        {"Visual", 56, "Bonus Risks", "en-US", "HTMLWithoutBonusShare", "Share of the accumulated on customers without a bonus"},
+				        {"Visual", 57, "Bonus Spent", "en-US", "VisualTitle", "Bonus spent"},
+				        {"Visual", 57, "Bonus Spent", "en-US", "HTMLBooked", "Spent"},
+				        {"Visual", 57, "Bonus Spent", "en-US", "HTMLSoFar", "from sales to date"},
+				        {"Visual", 58, "Bonus Spent Rate", "en-US", "VisualTitle", "Spent against accumulated"},
+				        {"Visual", 58, "Bonus Spent Rate", "en-US", "HTMLInPrice", "accumulated in the price"},
+				        {"Visual", 58, "Bonus Spent Rate", "en-US", "HTMLOfTurnover", "of accumulated"},
+				        {"Visual", 58, "Bonus Spent Rate", "en-US", "HTMLReal", "Spent"},
+				        {"Visual", 58, "Bonus Spent Rate", "en-US", "HTMLUnused", "Difference"},
+				        {"Visual", 59, "Budget Accumulated", "en-US", "MeasureLabel", "Budget accumulated"},
+				        {"Visual", 60, "Cost Price", "en-US", "VisualTitle", "Cost Price"},
+				        {"Visual", 61, "Extra Discounts", "en-US", "MeasureLabel", "Extra discounts"},
+				        {"Visual", 62, "Index and Value by Brand", "en-US", "MeasureLabel", "Index and value by brand"},
+				        {"Visual", 63, "Marketing Accumulated", "en-US", "VisualTitle", "Marketing Accumulated"},
+				        {"Visual", 64, "Marketing Budget", "en-US", "MeasureLabel", "Marketing Budget"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "VisualTitle", "Position accumulated"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "HTMLFromExpected", "to year end"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "HTMLSoFar", "of net sales to date"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "HTMLWithPosition", "With a position"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "HTMLWithoutPosition", "Without a position"},
+				        {"Visual", 65, "Position Accumulated", "en-US", "HTMLYearEnd", "Projected total"},
+				        {"Visual", 66, "Position Checks", "en-US", "VisualSubtitle", "Where the position spent needs attention"},
+				        {"Visual", 66, "Position Checks", "en-US", "VisualTitle", "Checks"},
+				        {"Visual", 66, "Position Checks", "en-US", "HTMLCNNoPos", "Credit notes received (suppliers' budget)"},
+				        {"Visual", 66, "Position Checks", "en-US", "HTMLFreeRow", "Fixed positions without a value"},
+				        {"Visual", 66, "Position Checks", "en-US", "HTMLPaidNoCN", "Brands with positions and no credit note"},
+				        {"Visual", 66, "Position Checks", "en-US", "HTMLPerPosition", "Average monthly price per position"},
+				        {"Visual", 66, "Position Checks", "en-US", "HTMLUnusedRow", "Difference (accumulated − spent)"},
+				        {"Visual", 67, "Position Customer", "en-US", "VisualSubtitle", "Position spent per customer against the {PositionRate} accumulated"},
+				        {"Visual", 67, "Position Customer", "en-US", "VisualTitle", "Customers with positions"},
+				        {"Visual", 68, "Position Month", "en-US", "VisualSubtitle", "Accumulated {PositionRate} of net sales against position spent"},
+				        {"Visual", 68, "Position Month", "en-US", "VisualTitle", "Accumulated and spent by month"},
+				        {"Visual", 69, "Position Register", "en-US", "VisualTitle", "Positions in outlets"},
+				        {"Visual", 69, "Position Register", "en-US", "HTMLFree", "Percentage of sales"},
+				        {"Visual", 69, "Position Register", "en-US", "HTMLInRegister", "positions in the trade-terms register"},
+				        {"Visual", 69, "Position Register", "en-US", "HTMLPaid", "Fixed value"},
+				        {"Visual", 69, "Position Register", "en-US", "HTMLPaidCustomers", "customers with a position"},
+				        {"Visual", 69, "Position Register", "en-US", "HTMLPaidNoPrice", "Fixed, without a value"},
+				        {"Visual", 70, "Position Spent", "en-US", "VisualTitle", "Position spent"},
+				        {"Visual", 70, "Position Spent", "en-US", "HTMLRemaining", "Still to come"},
+				        {"Visual", 70, "Position Spent", "en-US", "HTMLSoFar", "to date"},
+				        {"Visual", 70, "Position Spent", "en-US", "HTMLSoFarShort", "So far"},
+				        {"Visual", 70, "Position Spent", "en-US", "HTMLYearEnd", "Total for the year"},
+				        {"Visual", 71, "Position Spent Rate", "en-US", "VisualTitle", "Spent against accumulated"},
+				        {"Visual", 71, "Position Spent Rate", "en-US", "HTMLInPrice", "accumulated in the price"},
+				        {"Visual", 71, "Position Spent Rate", "en-US", "HTMLOfTurnover", "of accumulated"},
+				        {"Visual", 71, "Position Spent Rate", "en-US", "HTMLReal", "Spent"},
+				        {"Visual", 71, "Position Spent Rate", "en-US", "HTMLUnused", "Difference"},
+				        {"Visual", 72, "Position Type", "en-US", "VisualSubtitle", "Fixed-value and percentage positions"},
+				        {"Visual", 72, "Position Type", "en-US", "VisualTitle", "By position type"},
+				        {"Visual", 73, "Position Without Credit Note", "en-US", "VisualSubtitle", "Position spent against the brand's credit notes received"},
+				        {"Visual", 73, "Position Without Credit Note", "en-US", "VisualTitle", "Check by brand"},
+				        {"Visual", 74, "Product Coefficient and Sales Quantity", "en-US", "MeasureLabel", "Product coefficient and sales quantity"},
+				        {"Visual", 75, "Selling Price", "en-US", "VisualTitle", "Selling Price"},
+				        {"Visual", 76, "Selling Value", "en-US", "MeasureLabel", "Sales Value"},
+				        {"Visual", 77, "Supplier Price", "en-US", "VisualTitle", "Supplier Price"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "VisualTitle", "Accumulated"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLBonus", "Bonus"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLMarketing", "Marketing"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLOfSales", "of sales"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLPosition", "Positions"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLReceived", "From suppliers"},
+				        {"Visual", 78, "Total Accumulated", "en-US", "HTMLSoFar", "from sales to date"},
+				        {"Visual", 79, "Total Checks", "en-US", "VisualSubtitle", "Where the total spent needs attention"},
+				        {"Visual", 79, "Total Checks", "en-US", "VisualTitle", "Checks"},
+				        {"Visual", 79, "Total Checks", "en-US", "HTMLBooked", "Bonus spent of accumulated"},
+				        {"Visual", 79, "Total Checks", "en-US", "HTMLHighCost", "customers with spent above 10% of sales"},
+				        {"Visual", 79, "Total Checks", "en-US", "HTMLNegative", "Marketing accumulated in the price"},
+				        {"Visual", 79, "Total Checks", "en-US", "HTMLPositions", "Position spent"},
+				        {"Visual", 80, "Total Composition", "en-US", "VisualSubtitle", "Every pot, accumulated and spent"},
+				        {"Visual", 80, "Total Composition", "en-US", "VisualTitle", "Breakdown"},
+				        {"Visual", 81, "Total Customer", "en-US", "VisualSubtitle", "Spent: bonus, positions, campaigns, promotions, credit notes and discounts, against sales"},
+				        {"Visual", 81, "Total Customer", "en-US", "VisualTitle", "Trade investment per customer"},
+				        {"Visual", 82, "Total Difference", "en-US", "VisualTitle", "Difference"},
+				        {"Visual", 82, "Total Difference", "en-US", "HTMLCoverage", "Coverage"},
+				        {"Visual", 82, "Total Difference", "en-US", "HTMLCovered", "of spent is covered by accumulated"},
+				        {"Visual", 82, "Total Difference", "en-US", "HTMLSub", "accumulated less spent"},
+				        {"Visual", 83, "Total Division", "en-US", "VisualSubtitle", "Accumulated against spent, by division"},
+				        {"Visual", 83, "Total Division", "en-US", "VisualTitle", "By division"},
+				        {"Visual", 84, "Total Month", "en-US", "VisualSubtitle", "All pots together"},
+				        {"Visual", 84, "Total Month", "en-US", "VisualTitle", "Accumulated and spent by month"},
+				        {"Visual", 85, "Total Spent", "en-US", "VisualTitle", "Spent"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLBonus", "Bonus"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLDiscounts", "Discounts"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLInvoices", "Positions and trade terms"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLIssued", "Credit notes"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLOfSales", "of sales"},
+				        {"Visual", 85, "Total Spent", "en-US", "HTMLSoFar", "to date"},
+				        {"Visual", 86, "Value and Index per Product", "en-US", "MeasureLabel", "by value and index per product"},
+				        {"Visual", 87, "Week Years", "en-US", "VisualSubtitle", "In weeks, by years"}
+				        }
+				    ),
+				    // The refresh fails on a duplicate key; wrong text under a valid key is for review to catch.
+				    Guard =
+				        if Table.RowCount(Table.Distinct(Source, {"OwnerType", "OwnerNumber", "LabelType", "Culture"})) = Table.RowCount(Source)
+				        then Source
+				        else error "Labels: duplicate OwnerType + OwnerNumber + LabelType + Culture"
+				in
+				    Guard
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

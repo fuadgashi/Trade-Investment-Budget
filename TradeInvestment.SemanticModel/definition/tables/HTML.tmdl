@@ -1,0 +1,391 @@
+/// The KPI cards: each measure returns the HTML one card renders in the HTML Content visual.
+table HTML
+	lineageTag: 933ba7e2-a97d-4eaa-8a48-835cbd77cf8b
+
+	/// Annual-bonus KPI card - bonus spent: the bonus terms of the trade-terms register on the sales of the outlets and brands they cover, this year to date (Bonus Spent), as one bar. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Bonus Spent | HTML' =
+			VAR _spent = [Bonus Spent]
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _spent, NumberFormat( _spent, FALSE ) ), "",
+					LabelText( "HTMLSoFar", "Visual", 57 ),
+					{
+						-- a blank share fills the bar: the bar is the whole bonus spent
+						( LabelText( "HTMLBooked", "Visual", 57 ), FORMAT( _spent, NumberFormat( _spent, FALSE ) ), BLANK(), "dark", 1 )
+					},
+					BLANK()
+				)
+		displayFolder: KPI Cards
+		lineageTag: 8d08f783-cebb-4fb2-b7b7-0dacbad9ed01
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Annual-bonus KPI card - spent against accumulated, in total: Bonus Spent as a share of Bonus Accumulated (every customer), then a bullet bar of the same as a rate on total sales against the rate the price accumulates, with the difference between the two rates in %. Rendered as HTML. Text-returning, so it carries no format string.
+	measure 'Bonus Spent Rate | HTML' =
+			VAR _share = DIVIDE( [Bonus Spent], [Bonus Accumulated] )
+			VAR _rate = [Bonus Price Rate]
+			VAR _effective = _share * _rate
+			-- the bar's full width is a quarter above the larger of the two, so both fit with room
+			VAR _scale = MAX( _rate, _effective ) * 1.25
+			VAR _unused = _rate - _effective
+			RETURN
+				-- value, caption, fill share and text, target share and text, note; the title is the visual's
+				HtmlTargetCard(
+					FORMAT( _share, "0.0%", "en-US" ), "",
+					LabelText( "HTMLOfTurnover", "Visual", 58 ),
+					DIVIDE( _effective, _scale ), LabelText( "HTMLReal", "Visual", 58 ) & " " & FORMAT( _effective, "0.0%", "en-US" ),
+					DIVIDE( _rate, _scale ), FORMAT( _rate, "0.0%", "en-US" ) & " " & LabelText( "HTMLInPrice", "Visual", 58 ),
+					"◆ " & LabelText( "HTMLUnused", "Visual", 58 ) & " <b>" & FORMAT( _unused * 100, "+0.0;-0.0;0.0", "en-US" ) & "%</b>"
+				)
+		displayFolder: KPI Cards
+		lineageTag: d3840723-805d-4142-b22c-62405a869983
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Annual-bonus KPI card - customers with a bonus: how many customers have a bonus term this year to date, split into those spent above and within the bonus rate their own sales accumulated, with the bonus spent as a share of their sales against the rate the price sets aside. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Bonus Customers | HTML' =
+			VAR _customers = [Bonus Customers Count]
+			VAR _above = [Bonus Spent Above Accumulated Customers Count]
+			VAR _within = [Bonus Within Accumulated Customers Count]
+			VAR _rate = [Bonus Rate]
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _customers, "#,0" ), "",
+					LabelText( "HTMLCustomers", "Visual", 52 ),
+					{
+						( LabelText( "HTMLAbove", "Visual", 52 ), FORMAT( _above, "#,0" ), DIVIDE( _above, _customers ), "orange", 1 ),
+						( LabelText( "HTMLWithin", "Visual", 52 ), FORMAT( _within, "#,0" ), BLANK(), "blue", 2 )
+					},
+					-- no note without a bonus spent: there is no rate to show
+					IF(
+						NOT ISBLANK( _rate ),
+						"◆ " & LabelText( "HTMLBookedRate", "Visual", 52 ) & " <b>" & FORMAT( _rate, "0.0%", "en-US" ) & "</b> (" & FORMAT( [Bonus Price Rate], "0.0%", "en-US" ) & " " & LabelText( "HTMLInPrice", "Visual", 58 ) & ")"
+					)
+				)
+		displayFolder: KPI Cards
+		lineageTag: 1449e541-a23f-4806-9012-0b4cee42e8f2
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Annual-bonus KPI card - risks: customers whose bonus spent is more than the bonus rate their own sales set aside (and by how much), the bonus spent as a share of the sales of the customers it is agreed with, and the bonus accumulated on customers with no bonus term, in value and as a share. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Bonus Risks | HTML' =
+			VAR _over_count = [Bonus Spent Above Accumulated Customers Count]
+			VAR _over_amount = [Bonus Spent Above Accumulated]
+			VAR _without = [Bonus Not Given]
+			VAR _without_share = DIVIDE( _without, [Bonus Accumulated] )
+			RETURN
+				-- one row per check: state, text, value, format of the value, order
+				HtmlInfoCard(
+					{
+						( IF( _over_count > 0, "bad", "good" ), FORMAT( _over_count, "#,0" ) & " " & LabelText( "HTMLOverFunded", "Visual", 56 ) & " " & FORMAT( [Bonus Price Rate], "0.0%", "en-US" ), _over_amount, "signed", 1 ),
+						( "info", LabelText( "HTMLBookedRate", "Visual", 56 ), [Bonus Rate], "percent1", 2 ),
+						( "info", LabelText( "HTMLWithoutBonus", "Visual", 56 ), _without, "compact", 3 ),
+						( "info", LabelText( "HTMLWithoutBonusShare", "Visual", 56 ), _without_share, "percent", 4 )
+					}
+				)
+		displayFolder: KPI Cards
+		lineageTag: ffcab45f-5439-4a7a-9304-3deaa4d58174
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Secondary-position KPI card - accumulated: what the price sets aside for secondary positions this year to date (the position rate on net sales without VAT, every customer), split into customers with a position and without, with the projection to the end of the year. Rendered as HTML. Text-returning, so it carries no format string.
+	measure 'Position Accumulated | HTML' =
+			VAR _accumulated = [Position Accumulated]
+			VAR _with = [Price Position]
+			-- the rest of the accumulated, so the two parts always add up to the big number
+			VAR _without = _accumulated - _with
+			VAR _year_end = [Position Accumulated Year-End]
+			VAR _remaining = _year_end - _accumulated
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _accumulated, NumberFormat( _accumulated, FALSE ) ), "",
+					FORMAT( [Position Rate], "0.0%", "en-US" ) & " " & LabelText( "HTMLSoFar", "Visual", 65 ),
+					{
+						( LabelText( "HTMLWithPosition", "Visual", 65 ), FORMAT( _with, NumberFormat( _with, FALSE ) ), DIVIDE( _with, _accumulated ), "blue", 1 ),
+						( LabelText( "HTMLWithoutPosition", "Visual", 65 ), FORMAT( _without, NumberFormat( _without, FALSE ) ), BLANK(), "grey", 2 )
+					},
+					"◆ " & LabelText( "HTMLYearEnd", "Visual", 65 ) & " <b>" & FORMAT( _year_end, NumberFormat( _year_end, FALSE ) ) & "</b> (" & FORMAT( _remaining, NumberFormat( _remaining, TRUE ) ) & " " & LabelText( "HTMLFromExpected", "Visual", 65 ) & ")"
+				)
+		displayFolder: KPI Cards
+		lineageTag: 249dd38e-120d-4196-872e-0bc881164d81
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Secondary-position KPI card - spent against accumulated: the position spent as a share of what the price accumulated for positions this year, then a bullet bar of the spent rate (of net sales) against the position rate, with the difference between the two rates in %. Rendered as HTML. Text-returning, so it carries no format string.
+	measure 'Position Spent Rate | HTML' =
+			VAR _effective = [Position Spent Rate]
+			VAR _rate = [Position Rate]
+			-- the bar's full width is a quarter above the larger of the two, so both fit with room
+			VAR _scale = MAX( _rate, _effective ) * 1.25
+			VAR _unused = _rate - _effective
+			-- the big number: what is spent as a share of what is accumulated; the bar below compares the rates
+			VAR _share = DIVIDE( [Position Spent], [Position Accumulated] )
+			RETURN
+				-- value, caption, fill share and text, target share and text, note; the title is the visual's
+				HtmlTargetCard(
+					FORMAT( _share, "0.0%", "en-US" ), "",
+					LabelText( "HTMLOfTurnover", "Visual", 71 ),
+					DIVIDE( _effective, _scale ), LabelText( "HTMLReal", "Visual", 71 ) & " " & FORMAT( _effective, "0.0%", "en-US" ),
+					DIVIDE( _rate, _scale ), FORMAT( _rate, "0.0%", "en-US" ) & " " & LabelText( "HTMLInPrice", "Visual", 71 ),
+					"◆ " & LabelText( "HTMLUnused", "Visual", 71 ) & " <b>" & FORMAT( _unused * 100, "+0.0;-0.0;0.0", "en-US" ) & "%</b>"
+				)
+		displayFolder: KPI Cards
+		lineageTag: 7693e5e7-23e3-4b24-91e5-d127b11e67d2
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Secondary-position KPI card - register: every position in the trade-terms register this year once - fixed value with a value, fixed value without one (to fill in at the source), and percentage of sales - with the customers that have a position. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Position Register | HTML' =
+			VAR _all = [Positions Count]
+			VAR _paid = [Fixed Positions]
+			VAR _free = [Positions Percentage Count]
+			-- every position once: fixed value with a value, fixed value without one, percentage of sales
+			VAR _paid_no_price = [Fixed Without Price]
+			VAR _with_price = _paid - _paid_no_price
+			VAR _customers = [Position Customers Count]
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _all, "#,0" ), "",
+					LabelText( "HTMLInRegister", "Visual", 69 ),
+					{
+						( LabelText( "HTMLPaid", "Visual", 69 ), FORMAT( _with_price, "#,0" ), DIVIDE( _with_price, _all ), "blue", 1 ),
+						( LabelText( "HTMLPaidNoPrice", "Visual", 69 ), FORMAT( _paid_no_price, "#,0" ), DIVIDE( _paid_no_price, _all ), "amber", 2 ),
+						( LabelText( "HTMLFree", "Visual", 69 ), FORMAT( _free, "#,0" ), BLANK(), "grey", 3 )
+					},
+					"▲ <b>" & FORMAT( _customers, "#,0" ) & "</b> " & LabelText( "HTMLPaidCustomers", "Visual", 69 )
+				)
+		displayFolder: KPI Cards
+		lineageTag: b40ff359-ff23-4834-9aa0-22c749c67d14
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Secondary-position KPI card - checks: brands with position cost and no credit note received, the credit notes received (the suppliers' budget), fixed positions without a value in the register, the difference, and the average monthly value per fixed position. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Position Checks | HTML' =
+			VAR _paid_no_cn = [Position Suppliers Without Credit Note Count]
+			VAR _cn_no_pos = [Position Credit Notes]
+			VAR _free = [Fixed Without Price]
+			VAR _unused = [Position Difference]
+			VAR _per_position = [Position Average Monthly Price]
+			RETURN
+				-- one row per check: state, text, value, format of the value, order
+				HtmlInfoCard(
+					{
+						( IF( _paid_no_cn > 0, "neutral", "good" ), LabelText( "HTMLPaidNoCN", "Visual", 66 ), _paid_no_cn, "count", 1 ),
+						( "info", LabelText( "HTMLCNNoPos", "Visual", 66 ), _cn_no_pos, "compact", 2 ),
+						( "info", LabelText( "HTMLFreeRow", "Visual", 66 ), _free, "count", 3 ),
+						( RagColor( _unused, 0 ), LabelText( "HTMLUnusedRow", "Visual", 66 ), _unused, "signed", 4 ),
+						( "info", LabelText( "HTMLPerPosition", "Visual", 66 ), _per_position, "compact", 5 )
+					}
+				)
+		displayFolder: KPI Cards
+		lineageTag: 648942ea-3e5c-40dd-b3e8-760bf335efc5
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Total trade-investment KPI card - set aside and received: the bonus and position rates, the marketing budget, and what suppliers give back (credit notes received and service invoices) this year to date, with the share of sales. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Total Accumulated | HTML' =
+			VAR _total = [Total Accumulated]
+			VAR _bonus = [Bonus Accumulated]
+			VAR _position = [Position Accumulated]
+			VAR _marketing = [Marketing Accumulated Actual Year]
+			-- what suppliers give back: credit notes received and the service invoices billed to them
+			VAR _received = [Credit Notes Received Actual Year] + [Service Invoices Actual Year]
+			VAR _rate = [Total Accumulated Rate]
+			VAR _total_color = IF ( _total < 0, "#C63D3D", "#1F2A33" )
+			VAR _so_far =
+			    LabelText( "HTMLSoFar", "Visual", 78 )
+			VAR _bonus_label =
+			    LabelText( "HTMLBonus", "Visual", 78 )
+			VAR _position_label =
+			    LabelText( "HTMLPosition", "Visual", 78 )
+			VAR _marketing_label =
+			    LabelText( "HTMLMarketing", "Visual", 78 )
+			VAR _received_label =
+			    LabelText( "HTMLReceived", "Visual", 78 )
+			VAR _of_sales =
+			    LabelText( "HTMLOfSales", "Visual", 78 )
+			RETURN
+			    "<div style='position:absolute;inset:0;box-sizing:border-box;padding:0;display:flex;flex-direction:column;justify-content:space-between;font-family:Segoe UI, sans-serif;'>
+			    <div style='display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;min-height:38px;'>
+			    <span style='font-size:30px;font-weight:300;color:" & _total_color & ";'>" & FORMAT ( _total, NumberFormat ( _total, TRUE ) ) & "</span>
+			    <span style='font-size:13px;color:#6B7A85;'>" & _so_far & "</span>
+			    </div>
+			    <div style='display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;font-size:12px;color:#1F2A33;min-height:16px;align-items:center;'>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#0A2F45;margin-right:5px;'>
+			    </span>" & _bonus_label & " " & FORMAT ( _bonus, NumberFormat ( _bonus, FALSE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#0EA0C6;margin-right:5px;'>
+			    </span>" & _position_label & " " & FORMAT ( _position, NumberFormat ( _position, FALSE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#E07B24;margin-right:5px;'>
+			    </span>" & _marketing_label & " " & FORMAT ( _marketing, NumberFormat ( _marketing, TRUE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#B9C4CC;margin-right:5px;'>
+			    </span>" & _received_label & " " & FORMAT ( _received, NumberFormat ( _received, FALSE ) ) & "</span>
+			    </div>
+			    <div style='min-height:24px;display:flex;align-items:center;'>
+			    <span style='font-size:12px;line-height:16px;color:#0A2F45;background:#E6F5FA;border-radius:12px;padding:3px 10px;'>◆ <b>" & FORMAT ( _rate, "0.0%", "en-US" ) & "</b> " & _of_sales & "</span>
+			    </div>
+			    </div>"
+		displayFolder: KPI Cards
+		lineageTag: 7774f0a9-15f2-4feb-a8f2-6d8389c55954
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Total trade-investment KPI card - spent: annual bonus, credit notes issued, extra discounts, and positions with the other trade terms (campaigns, promotions) this year to date, with the share of sales. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Total Spent | HTML' =
+			VAR _total = [Total Spent]
+			VAR _bonus = [Bonus Spent]
+			VAR _issued = [Credit Notes Issued Actual Year]
+			VAR _discounts = [Total Discounts]
+			-- positions and the other trade terms: campaigns and promotions
+			VAR _invoices = [Position Spent] + YearToDay( [Campaigns] + [Promotions] )
+			VAR _rate = [Total Spent Rate]
+			VAR _so_far =
+			    LabelText( "HTMLSoFar", "Visual", 85 )
+			VAR _bonus_label =
+			    LabelText( "HTMLBonus", "Visual", 85 )
+			VAR _issued_label =
+			    LabelText( "HTMLIssued", "Visual", 85 )
+			VAR _discounts_label =
+			    LabelText( "HTMLDiscounts", "Visual", 85 )
+			VAR _invoices_label =
+			    LabelText( "HTMLInvoices", "Visual", 85 )
+			VAR _of_sales =
+			    LabelText( "HTMLOfSales", "Visual", 85 )
+			RETURN
+			    "<div style='position:absolute;inset:0;box-sizing:border-box;padding:0;display:flex;flex-direction:column;justify-content:space-between;font-family:Segoe UI, sans-serif;'>
+			    <div style='display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;min-height:38px;'>
+			    <span style='font-size:30px;font-weight:300;color:#1F2A33;'>" & FORMAT ( _total, NumberFormat ( _total, FALSE ) ) & "</span>
+			    <span style='font-size:13px;color:#6B7A85;'>" & _so_far & "</span>
+			    </div>
+			    <div style='display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;font-size:12px;color:#1F2A33;min-height:16px;align-items:center;'>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#0A2F45;margin-right:5px;'>
+			    </span>" & _bonus_label & " " & FORMAT ( _bonus, NumberFormat ( _bonus, FALSE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#0EA0C6;margin-right:5px;'>
+			    </span>" & _issued_label & " " & FORMAT ( _issued, NumberFormat ( _issued, FALSE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#E07B24;margin-right:5px;'>
+			    </span>" & _discounts_label & " " & FORMAT ( _discounts, NumberFormat ( _discounts, FALSE ) ) & "</span>
+			    <span>
+			    <span style='display:inline-block;width:9px;height:9px;background:#B9C4CC;margin-right:5px;'>
+			    </span>" & _invoices_label & " " & FORMAT ( _invoices, NumberFormat ( _invoices, FALSE ) ) & "</span>
+			    </div>
+			    <div style='min-height:24px;display:flex;align-items:center;'>
+			    <span style='font-size:12px;line-height:16px;color:#0A2F45;background:#E6F5FA;border-radius:12px;padding:3px 10px;'>◆ <b>" & FORMAT ( _rate, "0.0%", "en-US" ) & "</b> " & _of_sales & "</span>
+			    </div>
+			    </div>"
+		displayFolder: KPI Cards
+		lineageTag: 2c430a06-8a55-47b7-acce-f529ce76e027
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Total trade-investment KPI card - difference: set aside less spent, and how much of the spending is covered. Rendered as HTML. Text-returning, so it carries no format string.
+	measure 'Total Difference | HTML' =
+			VAR _difference = [Total Difference]
+			VAR _coverage = [Total Coverage]
+			RETURN
+				-- value, state, caption, parts ( label, value, share, colour, order ), note; the title is the visual's.
+				-- One part with no label: the bar only. A blank coverage is an empty bar, not the whole bar
+				HtmlBreakdownCard(
+					FORMAT( _difference, NumberFormat( _difference, TRUE ) ), IF( _difference < 0, "bad", "good" ),
+					LabelText( "HTMLSub", "Visual", 82 ),
+					{
+						( "", "", COALESCE( _coverage, 0 ), "green", 1 )
+					},
+					"◆ " & LabelText( "HTMLCoverage", "Visual", 82 ) & " <b>" & FORMAT( _coverage, "0.0%", "en-US" ) & "</b> " & LabelText( "HTMLCovered", "Visual", 82 )
+				)
+		displayFolder: KPI Cards
+		lineageTag: 064ecd4e-f007-48da-ba4d-ed9e4a105dae
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Total trade-investment KPI card - checks: the marketing budget the price leaves, customers costing more than 10 % of their sales, position cost, and the bonus spent as a share of the bonus accumulated. Rendered as HTML; the title and subtitle are the visual's. Text-returning, so it carries no format string.
+	measure 'Total Checks | HTML' =
+			VAR _marketing = [Marketing Accumulated Actual Year]
+			VAR _high = [Total High Spent Customers Count]
+			VAR _high_spent = [Total High Spent Amount]
+			VAR _positions = [Position Spent]
+			VAR _booked = DIVIDE( [Bonus Spent], [Bonus Accumulated] )
+			RETURN
+				-- one row per check: state, text, value, format of the value, order; the title and subtitle are the visual's
+				HtmlInfoCard(
+					{
+						( RagColor( _marketing, 0 ), LabelText( "HTMLNegative", "Visual", 79 ), _marketing, "signed", 1 ),
+						( IF( _high > 0, "neutral", "good" ), FORMAT( _high, "#,0" ) & " " & LabelText( "HTMLHighCost", "Visual", 79 ), _high_spent, "compact", 2 ),
+						( "info", LabelText( "HTMLPositions", "Visual", 79 ), _positions, "compact", 3 ),
+						( "info", LabelText( "HTMLBooked", "Visual", 79 ), _booked, "percent", 4 )
+					}
+				)
+		displayFolder: KPI Cards
+		lineageTag: 5291ac03-7a8b-49de-bc18-0941ec1fafe6
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Annual-bonus KPI card - accumulated: what the price sets aside for the annual bonus this year to date (the bonus rate on net sales without VAT, every customer), split into customers with a bonus term this year and without, with the projection to the end of the year. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Bonus Accumulated | HTML' =
+			VAR _accumulated = [Bonus Accumulated]
+			VAR _with = [Price Bonus]
+			-- the rest of the accumulated, so the two parts always add up to the big number
+			VAR _without = _accumulated - _with
+			VAR _year_end = [Bonus Accumulated Year-End]
+			VAR _remaining = _year_end - _accumulated
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _accumulated, NumberFormat( _accumulated, FALSE ) ), "",
+					FORMAT( [Bonus Price Rate], "0.0%", "en-US" ) & " " & LabelText( "HTMLSoFar", "Visual", 50 ),
+					{
+						( LabelText( "HTMLWithBonus", "Visual", 50 ), FORMAT( _with, NumberFormat( _with, FALSE ) ), DIVIDE( _with, _accumulated ), "blue", 1 ),
+						( LabelText( "HTMLWithoutBonus", "Visual", 50 ), FORMAT( _without, NumberFormat( _without, FALSE ) ), BLANK(), "grey", 2 )
+					},
+					"◆ " & LabelText( "HTMLYearEnd", "Visual", 50 ) & " <b>" & FORMAT( _year_end, NumberFormat( _year_end, FALSE ) ) & "</b> (" & FORMAT( _remaining, NumberFormat( _remaining, TRUE ) ) & " " & LabelText( "HTMLFromExpected", "Visual", 50 ) & ")"
+				)
+		displayFolder: KPI Cards
+		lineageTag: ecd7417d-e003-413c-a988-55eefd273e39
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	/// Secondary-position KPI card - spent: the position cost so far this year (fixed positions for every month they run, the current one included, percentage positions on their sales), as a bar of the commitment for the year: spent so far and what is left. Rendered as HTML for the HTML Content visual. Text-returning, so it carries no format string.
+	measure 'Position Spent | HTML' =
+			VAR _spent = [Position Spent]
+			VAR _year_end = [Position Spent Year-End]
+			VAR _remaining = _year_end - _spent
+			RETURN
+				-- value, caption, parts ( label, value, share, colour, order ), note; the title is the visual's
+				HtmlBreakdownCard(
+					FORMAT( _spent, NumberFormat( _spent, FALSE ) ), "",
+					LabelText( "HTMLSoFar", "Visual", 70 ),
+					{
+						( LabelText( "HTMLSoFarShort", "Visual", 70 ), FORMAT( _spent, NumberFormat( _spent, FALSE ) ), DIVIDE( _spent, _year_end ), "blue", 1 ),
+						( LabelText( "HTMLRemaining", "Visual", 70 ), FORMAT( _remaining, NumberFormat( _remaining, FALSE ) ), BLANK(), "grey", 2 )
+					},
+					"◆ " & LabelText( "HTMLYearEnd", "Visual", 70 ) & " <b>" & FORMAT( _year_end, NumberFormat( _year_end, FALSE ) ) & "</b>"
+				)
+		displayFolder: KPI Cards
+		lineageTag: fd777970-a1e1-403d-8781-3ddb8db2db74
+
+		annotation PBI_FormatHint = {"isText":true}
+
+	partition HTML = m
+		mode: import
+		queryGroup: Model
+		source =
+				let
+				    // Query group: Model
+				    // Measure-table scaffold for the HTML card measures.
+				    Source = #table({}, {})
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
